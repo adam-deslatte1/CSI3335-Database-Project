@@ -56,13 +56,13 @@ def register():
     if request.method == 'POST':
         username = request.form['username']
         if User.query.filter_by(username=username).first():
-            flash('Username already exists')
+            flash('Username already exists', 'error')
             return redirect(url_for('register'))
-        password = generate_password_hash(request.form['password'], salt_length=8)  # Using shorter salt
+        password = generate_password_hash(request.form['password'], salt_length=8)
         new_user = User(username=username, password_hash=password)
         db.session.add(new_user)
         db.session.commit()
-        flash('Registration successful! Please login.')
+        flash('Registration successful! Please login.', 'success')
         return redirect(url_for('login'))
     return render_template('register.html')
 
@@ -72,7 +72,7 @@ def login():
         user = User.query.filter_by(username=request.form['username']).first()
         if user and check_password_hash(user.password_hash, request.form['password']):
             if user.is_banned:
-                flash('Your account has been banned')
+                flash('Your account has been banned', 'error')
                 return redirect(url_for('login'))
             session['user_id'] = user.id
             session['username'] = user.username
@@ -80,14 +80,15 @@ def login():
             user.last_login = datetime.utcnow()
             db.session.commit()
             return redirect(url_for('dashboard'))
-        flash('Invalid username or password')
+        flash('Invalid username or password', 'error')
     return render_template('login.html')
 
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    return render_template('dashboard.html', username=session['username'])
+    user = User.query.get(session['user_id'])
+    return render_template('dashboard.html', username=session['username'], user=user)
 
 @app.route('/logout')
 def logout():

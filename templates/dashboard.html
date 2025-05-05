@@ -1,3 +1,25 @@
-<h2>Hello {{ username }}!</h2>
-<p>Welcome to your dashboard.</p>
-<a href="{{ url_for('logout') }}">Logout</a>
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; margin-top: 50px;">
+    <h1>Welcome, {{ username }}!</h1>
+    
+    <div style="margin: 30px 0;">
+        <a href="{{ url_for('trivia') }}" style="
+            display: inline-block;
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        ">Play Trivia Game</a>
+    </div>
+
+    <div style="margin-top: 30px;">
+        <h2>Your Stats</h2>
+        <p>High Score: ${{ user.score }}</p>
+    </div>
+</div>
+{% endblock %}
