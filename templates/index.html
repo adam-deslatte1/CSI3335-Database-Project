@@ -1,3 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
 <h1>Welcome to Baseball Trivia App</h1>
-<a href="{{ url_for('login') }}">Login</a> |
-<a href="{{ url_for('register') }}">Register</a>
+<p>Test your baseball knowledge with our trivia game!</p>
+<p>Features:</p>
+<ul>
+    <li>Play trivia with increasing difficulty levels</li>
+    <li>Use lifelines like 50:50, Phone a Friend, and Ask the Audience</li>
+    <li>Track no-hitters and perfect games</li>
+    <li>Compete with other users on the leaderboard</li>
+</ul>
+{% endblock %}

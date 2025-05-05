@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baseball Trivia App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .nav {
+            margin-bottom: 20px;
+        }
+        .nav a {
+            margin-right: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+        .nav a:hover {
+            color: #666;
+        }
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="{{ url_for('index') }}">Home</a>
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('trivia') }}">Play Trivia</a>
+            {% if session.get('is_admin') %}
+                <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">Login</a>
+            <a href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+    </div>
+
+    <div class="flash-messages">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html> 
