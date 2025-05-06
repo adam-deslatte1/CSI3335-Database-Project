@@ -5,7 +5,7 @@ from models import db, User, UserSelectionLog, NoHitter
 main = Blueprint('main', __name__)
 
 def get_all_team_names():
-    teams = db.session.query(teams).distinct().all()
+    teams = db.session.query(teams.team_name).distinct().all()
     opponents = db.session.query(NoHitter.opponent).distinct().all()
     all_teams = set([t[0] for t in teams] + [o[0] for o in opponents])
     return sorted(all_teams)
