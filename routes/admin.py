@@ -23,6 +23,15 @@ def ban_user(user_id):
     flash(f'User {user.username} has been banned', 'success')
     return redirect(url_for('admin.admin_dashboard'))
 
+@admin.route('/admin/unban/<int:user_id>', methods=['POST'])
+def unban_user(user_id):
+    user = User.query.get_or_404(user_id)
+    user.is_banned = False
+    db.session.commit()
+    flash('User has been unbanned.', 'success')
+    return redirect(url_for('admin.admin_dashboard'))
+
+
 @admin.route('/admin/trivia', methods=['GET', 'POST'])
 def manage_trivia():
     if 'user_id' not in session or not session.get('is_admin'):
