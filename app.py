@@ -22,9 +22,11 @@ app.register_blueprint(admin)
 
 db.init_app(app)
 
-# Create tables and admin user at app startup
+# Create application tables at startup
 with app.app_context():
+    # Create all tables
     db.create_all()
+    
     # Create admin user if not exists
     if not User.query.filter_by(username='admin').first():
         admin = User(
