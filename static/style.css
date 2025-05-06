@@ -1,0 +1,46 @@
+.stat-value {
+    font-size: 2em;
+    font-weight: bold;
+  }
+  .correct-stat {
+    color: #28a745;
+  }
+  .incorrect-stat {
+    color: #dc3545;
+  }
+  .hidden-stat {
+    color: #bbb;
+  }
+
+  .ladder-container {
+    position: fixed;
+    right: 2vw;
+    top: 10vh;
+    width: 200px;
+    z-index: 100;
+  }
+  
+  .ladder-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .ladder-item {
+    padding: 6px;
+    margin: 2px 0;
+    background: #222;
+    color: #ccc;
+  }
+  
+  .ladder-item.current {
+    background: gold;
+    color: black;
+    font-weight: bold;
+  }
+  
+  .ladder-item.safe {
+    background: #1e90ff;
+    color: white;
+  }
+  

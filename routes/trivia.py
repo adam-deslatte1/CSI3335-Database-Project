@@ -2,6 +2,9 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from models import db, User, TriviaQuestion, UserTriviaHistory, UserLifeline
 import json
 import random
+from sqlalchemy import text
+from fetch import FETCHER_MAP
+import re
 
 trivia = Blueprint('trivia', __name__)
 
@@ -10,52 +13,121 @@ PRIZE_MONEY = {
     1: 100,
     2: 200,
     3: 300,
-    4: 500,
-    5: 1000,  # Safe haven
+    4: 500,   # Safe haven
+    5: 1000,
     6: 2000,
-    7: 4000,
+    7: 4000,  # Safe haven
     8: 8000,
-    9: 16000,
-    10: 32000,  # Safe haven
-    11: 64000,
-    12: 125000,
-    13: 250000,
-    14: 500000,
-    15: 1000000  # Safe haven
+    9: 16000  # Safe haven
 }
+SAFE_HAVENS = [4, 7, 9]
+
+FETCHERS_WITH_DIFFICULTY = {
+    "fetch_year", "fetch_year_with_ws", "fetch_year_recent"
+}
+
+def run_sql(sql):
+    result = db.session.execute(text(sql))
+    return [row[0] for row in result.fetchall()]
 
 @trivia.route('/trivia')
 def play_trivia():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
-    # Get user's current level and prize money
-    user = User.query.get(session['user_id'])
+
     current_level = session.get('current_level', 1)
-    current_prize = session.get('current_prize', 0)
-    
-    # Get a question for the current level
-    question = TriviaQuestion.query.filter_by(
-        level=current_level,
-        is_active=True
+    if current_level <= 4:
+        difficulty = 'easy'
+    elif current_level <= 7:
+        difficulty = 'medium'
+    else:
+        difficulty = 'hard'
+
+    # Get a random question for the correct difficulty
+    question = TriviaQuestion.query.filter(
+        TriviaQuestion.fetchers != None,
+        TriviaQuestion.fetchers != '',
+        TriviaQuestion.fetchers != '[]',
+        TriviaQuestion.difficulty == difficulty
     ).order_by(db.func.rand()).first()
-    
     if not question:
-        flash('No questions available for this level', 'error')
+        flash('No questions available', 'error')
         return redirect(url_for('main.dashboard'))
-    
-    # Get user's available lifelines
-    lifelines = UserLifeline.query.filter_by(
-        user_id=session['user_id'],
-        is_used=False
-    ).all()
-    
-    used_lifelines = [l.lifeline_type for l in lifelines if l.is_used]
-    
-    return render_template('trivia.html',
-                         question=question,
-                         current_prize=current_prize,
-                         used_lifelines=used_lifelines)
+
+    fetchers = json.loads(question.fetchers)
+    if not fetchers:
+        flash('No fetcher defined for this question.', 'error')
+        return redirect(url_for('main.dashboard'))
+    fetcher_name = fetchers[0]  # Assuming only one fetcher per question for now
+    fetcher_func = FETCHER_MAP.get(fetcher_name)
+
+    if fetcher_func is None:
+        flash(f'Unknown fetcher: {fetcher_name}', 'error')
+        return redirect(url_for('main.dashboard'))
+
+    # Pass difficulty if needed
+    if fetcher_name in FETCHERS_WITH_DIFFICULTY:
+        fetch_value = fetcher_func(question.difficulty)
+    else:
+        fetch_value = fetcher_func()
+
+    # --- Robustly extract all template variables ---
+    def extract_vars(s):
+        return set(re.findall(r'\{(\w+)\}', s or ''))
+    needed_vars = set()
+    needed_vars |= extract_vars(question.template)
+    needed_vars |= extract_vars(question.sql_template)
+    needed_vars |= extract_vars(question.wrong_sql_template)
+
+    template_vars = {}
+    # Try to fill all needed vars from fetch_value
+    for var in needed_vars:
+        if isinstance(fetch_value, dict) and var in fetch_value:
+            template_vars[var] = fetch_value[var]
+        elif isinstance(fetch_value, tuple):
+            # Common tuple order: (nameFirst, nameLast)
+            if var == 'nameFirst':
+                template_vars[var] = fetch_value[0]
+            elif var == 'nameLast':
+                template_vars[var] = fetch_value[1]
+        else:
+            template_vars[var] = fetch_value
+    # If any needed var is still missing, skip this question
+    missing_vars = [v for v in needed_vars if v not in template_vars or template_vars[v] is None]
+    if missing_vars:
+        flash(f'Could not generate question due to missing variables: {missing_vars}', 'error')
+        return redirect(url_for('main.dashboard'))
+
+    question_text = question.template.format(**template_vars)
+    correct_sql = question.sql_template.format(**template_vars)
+    wrong_sql = question.wrong_sql_template.format(**template_vars)
+
+    print("Difficulty:", difficulty)
+    print("Fetcher value:", fetch_value)
+    print("Correct SQL:", correct_sql)
+
+    correct_answers = run_sql(correct_sql)
+    wrong_answers = run_sql(wrong_sql)
+
+    # Pick one correct and up to 3 wrong answers
+    if not correct_answers:
+        flash('No correct answer found', 'error')
+        return redirect(url_for('main.dashboard'))
+    correct_answer = correct_answers[0]
+    options = [correct_answer] + wrong_answers[:3]
+    random.shuffle(options)
+
+    return render_template(
+        'trivia.html',
+        question_text=question_text,
+        options=options,
+        correct_answer=correct_answer,
+        current_prize=session.get('current_prize', 0),
+        used_lifelines=[],
+        current_level=current_level,
+        PRIZE_MONEY=PRIZE_MONEY,
+        SAFE_HAVENS=SAFE_HAVENS
+    )
 
 @trivia.route('/trivia/fifty-fifty', methods=['POST'])
 def fifty_fifty():
@@ -132,56 +204,53 @@ def walk_away():
 def trivia_answer():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
-    
-    question_id = request.form.get('question_id')
+
     user_answer = request.form.get('answer')
-    
-    question = TriviaQuestion.query.get_or_404(question_id)
-    is_correct = user_answer == question.correct_answer
-    
+    correct_answer = request.form.get('correct_answer')
+
+    is_correct = user_answer == correct_answer
+
     # Get current level and prize money
     current_level = session.get('current_level', 1)
     current_prize = session.get('current_prize', 0)
-    
+
     if is_correct:
         # Update prize money
         new_prize = PRIZE_MONEY[current_level]
         session['current_prize'] = new_prize
-        
         # If not at the last level, increment level
-        if current_level < 15:
+        if current_level < 9:
             session['current_level'] = current_level + 1
         else:
             session['game_over'] = True
     else:
         # If at a safe haven, keep the last safe haven prize
-        if current_level in [5, 10, 15]:
+        if current_level in SAFE_HAVENS:
             new_prize = PRIZE_MONEY[current_level]
         else:
             # Find the last safe haven
-            safe_havens = [5, 10, 15]
-            last_safe_haven = max([h for h in safe_havens if h < current_level], default=0)
+            last_safe_haven = max([h for h in SAFE_HAVENS if h < current_level], default=0)
             new_prize = PRIZE_MONEY[last_safe_haven] if last_safe_haven > 0 else 0
-        
         session['game_over'] = True
-    
-    # Record the answer
-    history = UserTriviaHistory(
-        user_id=session['user_id'],
-        question_id=question_id,
-        user_answer=user_answer,
-        is_correct=is_correct,
-        points_earned=new_prize,
-        lifelines_used=json.dumps(session.get('used_lifelines', []))
-    )
-    db.session.add(history)
-    
+
+    # Record the answer (optional: you can add more fields as needed)
+    # history = UserTriviaHistory(
+    #     user_id=session['user_id'],
+    #     question_id=question_id,  # Not available in this flow
+    #     user_answer=user_answer,
+    #     is_correct=is_correct,
+    #     points_earned=new_prize,
+    #     lifelines_used=json.dumps(session.get('used_lifelines', []))
+    # )
+    # db.session.add(history)
     # Update user score
     user = User.query.get(session['user_id'])
     user.score = max(user.score, new_prize)
     db.session.commit()
-    
+
     return jsonify({
         'correct': is_correct,
-        'prize_money': new_prize
+        'prize_money': new_prize,
+        'correct_answer': correct_answer,
+        'current_level': session.get('current_level', 1)
     }) 

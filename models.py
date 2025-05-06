@@ -103,18 +103,13 @@ class UserTriviaHistory(db.Model):
     answered_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class TriviaQuestion(db.Model):
-    __tablename__ = 'app_trivia_questions'
+    __tablename__ = 'trivia_questions'
     id = db.Column(db.Integer, primary_key=True)
-    question_text = db.Column(db.Text, nullable=False)
-    correct_answer = db.Column(db.String(255), nullable=False)
-    options = db.Column(db.JSON)
-    level = db.Column(db.Integer)
-    prize_money = db.Column(db.Integer)
-    is_safe_haven = db.Column(db.Boolean, default=False)
-    category = db.Column(db.String(50))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    created_by = db.Column(db.Integer, db.ForeignKey('app_users.id'))
-    is_active = db.Column(db.Boolean, default=True)
+    difficulty = db.Column(db.String(20))
+    template = db.Column(db.Text)
+    fetchers = db.Column(db.Text)
+    sql_template = db.Column(db.Text)
+    wrong_sql_template = db.Column(db.Text)
 
 class UserLifeline(db.Model):
     __tablename__ = 'app_lifelines'

@@ -1,8 +1,11 @@
 from sqlalchemy import create_engine, text
 import random
+from csi3335s2025 import mysql
+from flask import flash, redirect, url_for
+import json
 
 # === SQLAlchemy Setup ===
-engine = create_engine("mysql+pymysql://root:cybears@127.0.0.1/baseball")
+engine = create_engine(f"mysql+mysqlconnector://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}")
 
 
 # === Helper ===
@@ -34,12 +37,12 @@ def fetch_year(difficulty="easy"):
     return try_fetch(query)
 
 def fetch_year_with_ws(difficulty="easy"):
-    if difficulty == "easy":
-        query = "SELECT yearID FROM teams WHERE WSWin = 'Y' AND yearID >= YEAR(CURDATE()) - 20 ORDER BY RAND() LIMIT 1"
-    elif difficulty == "medium":
-        query = "SELECT yearID FROM teams WHERE WSWin = 'Y' AND yearID >= YEAR(CURDATE()) - 40 ORDER BY RAND() LIMIT 1"
-    else:
-        query = "SELECT yearID FROM teams WHERE WSWin = 'Y' ORDER BY RAND() LIMIT 1"
+    # Only select years that actually exist in the data with WSWin = 'Y'
+    query = """
+        SELECT yearID FROM teams
+        WHERE WSWin = 'Y'
+        ORDER BY RAND() LIMIT 1
+    """
     return try_fetch(query)
 
 def fetch_year_recent(difficulty="easy"):
@@ -79,7 +82,7 @@ def fetch_full_hof_name():
     """
     with engine.connect() as conn:
         result = conn.execute(text(query)).first()
-        return f"{result[0]} {result[1]}" if result else None
+        return (result[0], result[1]) if result else (None, None)
 
 
 # Team and location fetchers
@@ -124,3 +127,17 @@ def fetch_year_with_wc():
         LIMIT 1
     """
     return try_fetch(query)
+
+FETCHER_MAP = {
+    "fetch_year": fetch_year,
+    "fetch_hof_first_name": fetch_hof_first_name,
+    "fetch_hof_last_name": fetch_hof_last_name,
+    "fetch_full_hof_name": fetch_full_hof_name,
+    "fetch_team_name": fetch_team_name,
+    "fetch_team_city": fetch_team_city,
+    "fetch_team_state": fetch_team_state,
+    "fetch_multi_team_state": fetch_multi_team_state,
+    "fetch_year_with_ws": fetch_year_with_ws,
+    "fetch_year_recent": fetch_year_recent,
+    "fetch_rank": fetch_rank,
+}

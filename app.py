@@ -26,12 +26,13 @@ login_manager.login_view = 'auth.login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Configure SQLAlchemy for MariaDB with PyMySQL
-app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}"
+# Configure SQLAlchemy for MariaDB with MySQL Connector/Python
+app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+mysqlconnector://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
-db.init_app(app)
+if hasattr(db, 'init_app'):
+    db.init_app(app)
 csrf = CSRFProtect(app)
 
 # Setup Login Manager
@@ -51,10 +52,6 @@ app.register_blueprint(trivia)
 app.register_blueprint(admin)
 app.register_blueprint(higher_lower_game)
 
-db.init_app(app)
-
-csrf = CSRFProtect(app)
-
 # Create tables and admin user at app startup
 with app.app_context():
     # Create all tables
@@ -69,6 +66,10 @@ with app.app_context():
         )
         db.session.add(admin_user)
         db.session.commit()
+
+@app.template_filter('format_number')
+def format_number_filter(value):
+    return "{:,}".format(value)
 
 if __name__ == '__main__':
     app.run(debug=True)

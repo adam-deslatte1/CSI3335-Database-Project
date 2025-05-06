@@ -2,12 +2,13 @@ import json
 import random
 from sqlalchemy import create_engine, text
 import importlib
+from csi3335s2025 import mysql
 
 # === Load fetch functions ===
 fetch = importlib.import_module("fetch")
 
 # === SQLAlchemy setup ===
-engine = create_engine("mysql+pymysql://root:cybears@127.0.0.1/baseball")
+engine = create_engine(f"mysql+mysqlconnector://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}")
 
 
 def get_question_by_id(qid):

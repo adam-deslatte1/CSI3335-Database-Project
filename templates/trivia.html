@@ -1,64 +1,69 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="ladder-container">
+  <ul class="ladder-list">
+    {% for lvl in range(9, 0, -1) %}
+      {# Determine which CSS modifier to apply #}
+      {% if lvl == current_level %}
+        {% set modifier = "current" %}
+      {% elif lvl in SAFE_HAVENS %}
+        {% set modifier = "safe" %}
+      {% else %}
+        {% set modifier = "" %}
+      {% endif %}
+
+      <li class="ladder-item {{ modifier }}">
+        Inning {{ lvl }}: ${{ PRIZE_MONEY[lvl] | format_number }}
+      </li>
+    {% endfor %}
+  </ul>
+</div>
+
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <!-- Prize Money Display -->
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">Prize Money: ${{ question.prize_money|format_number }}</h3>
+                    <h3 class="mb-0">Prize Money: ${{ current_prize|format_number }}</h3>
                 </div>
             </div>
 
             <!-- Question Card -->
             <div class="card">
-                <div class="card-header">
-                    <h3>Level {{ question.level }}</h3>
-                </div>
                 <div class="card-body">
-                    <h4 class="card-title">{{ question.question_text }}</h4>
-                    
-                    <!-- Lifelines -->
-                    <div class="lifelines mb-4">
-                        <button class="btn btn-outline-primary" id="fiftyFifty" {% if 'fifty_fifty' in used_lifelines %}disabled{% endif %}>
-                            50:50
-                        </button>
-                        <button class="btn btn-outline-primary" id="phoneFriend" {% if 'phone_friend' in used_lifelines %}disabled{% endif %}>
-                            Phone a Friend
-                        </button>
-                        <button class="btn btn-outline-primary" id="askAudience" {% if 'ask_audience' in used_lifelines %}disabled{% endif %}>
-                            Ask the Audience
-                        </button>
-                    </div>
-
+                    <h4 class="card-title question-centered">{{ question_text }}</h4>
                     <form id="triviaForm" class="mt-4">
-                        <input type="hidden" name="question_id" value="{{ question.id }}">
-                        {% for option in question.options %}
-                        <div class="form-check mb-3 option-container">
-                            <input class="form-check-input" type="radio" name="answer" id="option{{ loop.index }}" value="{{ option }}">
-                            <label class="form-check-label" for="option{{ loop.index }}">
-                                {{ option }}
-                            </label>
-                        </div>
+                        <input type="hidden" name="correct_answer" value="{{ correct_answer }}">
+                        <div class="answer-grid">
+                        {% for option in options %}
+                            <button type="button" class="answer-btn" data-value="{{ option }}" id="option{{ loop.index }}">{{ option }}</button>
                         {% endfor %}
-                        <div class="d-flex justify-content-between mt-4">
-                            <button type="button" class="btn btn-secondary" id="walkAway">Walk Away</button>
-                            <button type="submit" class="btn btn-primary">Lock In Answer</button>
+                        </div>
+                        <input type="hidden" name="answer" id="selectedAnswer">
+                        <div class="d-flex justify-content-center mt-4">
+                            <button type="submit" class="lockin-btn" id="submitBtn" disabled>Lock In Answer</button>
                         </div>
                     </form>
                 </div>
             </div>
             
             <!-- Result Display -->
-            <div id="result" class="mt-4" style="display: none;">
-                <div class="alert" role="alert">
-                    <h4 class="alert-heading"></h4>
-                    <p class="result-text"></p>
-                    <hr>
-                    <p class="mb-0">Current Prize Money: $<span id="currentPrize">{{ current_prize|format_number }}</span></p>
+            <div id="resultOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
+                <div class="card text-center" style="max-width: 400px; margin:auto;">
+                    <div class="card-body">
+                        <h2 id="resultHeading"></h2>
+                        <p class="result-text"></p>
+                        <p class="mb-0">Current Prize Money: $<span id="currentPrize">{{ current_prize|format_number }}</span></p>
+                        <div id="nextQuestionBtnContainer" class="mt-4" style="display:none;">
+                            <button class="btn btn-success" id="nextQuestionBtn">Next Question</button>
+                        </div>
+                        <div id="playAgainBtnContainer" class="mt-4" style="display:none;">
+                            <button class="btn btn-danger" id="playAgainBtn">Play Again</button>
+                        </div>
+                    </div>
                 </div>
-                <button class="btn btn-primary" onclick="location.reload()">Next Question</button>
             </div>
 
             <!-- Lifeline Results -->
@@ -79,77 +84,121 @@
     </div>
 </div>
 
-{% block scripts %}
-<script>
-// Format number with commas
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+<style>
+.answer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
+.answer-btn {
+    width: 100%;
+    max-width: 260px;
+    min-width: 120px;
+    padding: 0.8rem 0.5rem;
+    font-size: 1rem;
+    border: 2px solid #444;
+    border-radius: 10px;
+    background: #181c1b;
+    color: #fff;
+    transition: border 0.2s, background 0.2s;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+.lockin-btn {
+    width: 100%;
+    max-width: 260px;
+    min-width: 120px;
+    padding: 0.8rem 0.5rem;
+    font-size: 1rem;
+    border: 2px solid #007bff;
+    border-radius: 10px;
+    background: #007bff;
+    color: #fff;
+    transition: border 0.2s, background 0.2s;
+    cursor: pointer;
+    box-sizing: border-box;
+    margin: 0 auto;
+    display: block;
+}
+.lockin-btn:disabled {
+    background: #ccc;
+    border-color: #ccc;
+    color: #888;
+    cursor: not-allowed;
+}
+.question-centered {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+}
+@media (max-width: 700px) {
+    .answer-grid {
+        grid-template-columns: 1fr;
+        max-width: 95vw;
+    }
+    .answer-btn, .lockin-btn {
+        max-width: 100%;
+        font-size: 0.95rem;
+    }
+    .question-centered {
+        font-size: 1.1rem;
+    }
+}
+.answer-btn.selected {
+    border: 3px solid #ffc107;
+    background: #232927;
+}
+.answer-btn.correct {
+    border: 3px solid #28a745;
+    background: #1e2e1e;
+    color: #fff;
+}
+.answer-btn.incorrect {
+    border: 3px solid #dc3545;
+    background: #2e1e1e;
+    color: #fff;
+}
+</style>
 
-// Handle 50:50 lifeline
-document.getElementById('fiftyFifty').addEventListener('click', function() {
-    fetch('/trivia/fifty-fifty', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            question_id: document.querySelector('input[name="question_id"]').value
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        const options = document.querySelectorAll('.option-container');
-        options.forEach(option => {
-            if (data.eliminated_options.includes(option.querySelector('input').value)) {
-                option.style.display = 'none';
-            }
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // DEBUG: Log how many answer buttons are found
+    const answerBtns = document.querySelectorAll('.answer-btn');
+    console.log('Found answer buttons:', answerBtns.length);
+    const selectedAnswerInput = document.getElementById('selectedAnswer');
+    const submitBtn = document.getElementById('submitBtn');
+    console.log('selectedAnswerInput:', selectedAnswerInput);
+    console.log('submitBtn:', submitBtn);
+    let selectedBtn = null;
+
+    if (selectedAnswerInput && submitBtn) {
+        answerBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                answerBtns.forEach(b => b.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedAnswerInput.value = this.dataset.value;
+                submitBtn.disabled = false;
+                selectedBtn = this;
+                console.log('Selected:', this.dataset.value);
+            });
         });
-        this.disabled = true;
-        showLifelineResult('50:50 used! Two incorrect options have been eliminated.');
-    });
-});
+    } else {
+        console.error('selectedAnswerInput or submitBtn not found!');
+    }
 
-// Handle Phone a Friend lifeline
-document.getElementById('phoneFriend').addEventListener('click', function() {
-    fetch('/trivia/phone-friend', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            question_id: document.querySelector('input[name="question_id"]').value
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        this.disabled = true;
-        showLifelineResult(`Your friend says: "${data.advice}"`);
-    });
-});
+    // Format number with commas
+    function formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
 
-// Handle Ask the Audience lifeline
-document.getElementById('askAudience').addEventListener('click', function() {
-    fetch('/trivia/ask-audience', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            question_id: document.querySelector('input[name="question_id"]').value
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        this.disabled = true;
-        showLifelineResult(`Audience results: ${data.results}`);
-    });
-});
-
-// Handle Walk Away
-document.getElementById('walkAway').addEventListener('click', function() {
-    if (confirm('Are you sure you want to walk away with your current prize money?')) {
-        fetch('/trivia/walk-away', {
+    // Handle 50:50 lifeline
+    document.getElementById('fiftyFifty').addEventListener('click', function() {
+        fetch('/trivia/fifty-fifty', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -160,54 +209,142 @@ document.getElementById('walkAway').addEventListener('click', function() {
         })
         .then(response => response.json())
         .then(data => {
-            showResult(true, data.prize_money);
+            const options = document.querySelectorAll('.option-container');
+            options.forEach(option => {
+                if (data.eliminated_options.includes(option.querySelector('input').value)) {
+                    option.style.display = 'none';
+                }
+            });
+            this.disabled = true;
+            showLifelineResult('50:50 used! Two incorrect options have been eliminated.');
         });
-    }
-});
-
-// Handle form submission
-document.getElementById('triviaForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    
-    fetch('/trivia/answer', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        showResult(data.correct, data.prize_money);
     });
-});
 
-function showResult(correct, prizeMoney) {
-    const resultDiv = document.getElementById('result');
-    const alertDiv = resultDiv.querySelector('.alert');
-    const heading = resultDiv.querySelector('.alert-heading');
-    const resultText = resultDiv.querySelector('.result-text');
-    const currentPrize = document.getElementById('currentPrize');
-    
-    if (correct) {
-        alertDiv.className = 'alert alert-success';
-        heading.textContent = 'Correct!';
-        resultText.textContent = `You've won $${formatNumber(prizeMoney)}!`;
-    } else {
-        alertDiv.className = 'alert alert-danger';
-        heading.textContent = 'Incorrect!';
-        resultText.textContent = `Game Over! You walk away with $${formatNumber(prizeMoney)}`;
+    // Handle Phone a Friend lifeline
+    document.getElementById('phoneFriend').addEventListener('click', function() {
+        fetch('/trivia/phone-friend', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question_id: document.querySelector('input[name="question_id"]').value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            this.disabled = true;
+            showLifelineResult(`Your friend says: "${data.advice}"`);
+        });
+    });
+
+    // Handle Ask the Audience lifeline
+    document.getElementById('askAudience').addEventListener('click', function() {
+        fetch('/trivia/ask-audience', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                question_id: document.querySelector('input[name="question_id"]').value
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            this.disabled = true;
+            showLifelineResult(`Audience results: ${data.results}`);
+        });
+    });
+
+    // Handle Walk Away
+    document.getElementById('walkAway').addEventListener('click', function() {
+        if (confirm('Are you sure you want to walk away with your current prize money?')) {
+            fetch('/trivia/walk-away', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    question_id: document.querySelector('input[name="question_id"]').value
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showResult(true, data.prize_money);
+            });
+        }
+    });
+
+    // Handle form submission
+    document.getElementById('triviaForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (!selectedAnswerInput.value) return;
+        const formData = new FormData(this);
+        fetch('/trivia/answer', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            showResult(data.correct, data.prize_money, data.correct_answer, selectedAnswerInput.value);
+            // Update prize and inning highlight
+            document.getElementById('currentPrize').textContent = formatNumber(data.prize_money);
+            // Update ladder highlight
+            document.querySelectorAll('.ladder-item').forEach((item, idx) => {
+                item.classList.remove('current');
+                if (9 - idx === data.current_level) {
+                    item.classList.add('current');
+                }
+            });
+        });
+    });
+
+    function showResult(correct, prizeMoney, correctAnswer, userAnswer) {
+        const overlay = document.getElementById('resultOverlay');
+        const heading = document.getElementById('resultHeading');
+        const resultText = overlay.querySelector('.result-text');
+        const currentPrize = document.getElementById('currentPrize');
+        const nextBtnContainer = document.getElementById('nextQuestionBtnContainer');
+        const playAgainBtnContainer = document.getElementById('playAgainBtnContainer');
+        overlay.style.display = 'flex';
+        document.getElementById('triviaForm').style.display = 'none';
+        // Highlight correct and incorrect answers
+        answerBtns.forEach(btn => {
+            btn.classList.remove('selected');
+            if (btn.dataset.value === correctAnswer) {
+                btn.classList.add('correct');
+            }
+            if (!correct && btn.dataset.value === userAnswer && userAnswer !== correctAnswer) {
+                btn.classList.add('incorrect');
+            }
+        });
+        if (correct) {
+            heading.textContent = 'Correct!';
+            resultText.textContent = `You've won $${formatNumber(prizeMoney)}!`;
+            nextBtnContainer.style.display = 'block';
+            playAgainBtnContainer.style.display = 'none';
+        } else {
+            heading.textContent = 'Incorrect!';
+            resultText.textContent = `Game Over! The correct answer was "${correctAnswer}". You walk away with $${formatNumber(prizeMoney)}`;
+            nextBtnContainer.style.display = 'none';
+            playAgainBtnContainer.style.display = 'block';
+        }
+        currentPrize.textContent = formatNumber(prizeMoney);
     }
-    
-    currentPrize.textContent = formatNumber(prizeMoney);
-    resultDiv.style.display = 'block';
-    document.getElementById('triviaForm').style.display = 'none';
-}
 
-function showLifelineResult(text) {
-    const modal = new bootstrap.Modal(document.getElementById('lifelineResult'));
-    document.getElementById('lifelineText').textContent = text;
-    modal.show();
-}
+    document.getElementById('nextQuestionBtn').addEventListener('click', function() {
+        window.location.reload();
+    });
+    document.getElementById('playAgainBtn').addEventListener('click', function() {
+        // Optionally, reset session state via an endpoint
+        window.location.href = '/trivia';
+    });
+
+    function showLifelineResult(text) {
+        const modal = new bootstrap.Modal(document.getElementById('lifelineResult'));
+        document.getElementById('lifelineText').textContent = text;
+        modal.show();
+    }
+});
 </script>
 {% endblock %}
-{% endblock %} 

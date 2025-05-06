@@ -1,21 +1,14 @@
-import pymysql
-import json  # ← Add this
+import mysql.connector
+import json
+from csi3335s2025 import mysql
 
 from questions import QUESTIONS
 
-mysql = {
-    'location': '127.0.0.1',
-    'user': 'root',
-    'password': 'password',
-    'database': 'baseball'
-}
-
-conn = pymysql.connect(
+conn = mysql.connector.connect(
     host=mysql['location'],
     user=mysql['user'],
     password=mysql['password'],
-    database=mysql['database'],
-    charset='utf8mb4'
+    database=mysql['database']
 )
 cur = conn.cursor()
 
