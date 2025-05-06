@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Select a Team to View No-Hitters</h2>
+
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label for="team_name">Team Name:</label>
+            <select name="team_name" id="team_name" class="form-control" required>
+                <option value="">-- Select a Team --</option>
+                {% for team in teams %}
+                    <option value="{{ team }}" {% if selected_team == team %}selected{% endif %}>{{ team }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Search</button>
+    </form>
+
+    {% if selected_team %}
+        <h3 class="mt-4">No-Hitters Thrown <span class="text-success">By</span> {{ selected_team }}</h3>
+        {% if thrown_by %}
+            <ul>
+                {% for nh in thrown_by %}
+                    <li>{{ nh.pitcher }} on {{ nh.date.strftime('%Y-%m-%d') }} vs {{ nh.opponent }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No no-hitters thrown by this team.</p>
+        {% endif %}
+
+        <h3 class="mt-4">No-Hitters Thrown <span class="text-danger">Against</span> {{ selected_team }}</h3>
+        {% if thrown_against %}
+            <ul>
+                {% for nh in thrown_against %}
+                    <li>{{ nh.pitcher }} ({{ nh.team }}) on {{ nh.date.strftime('%Y-%m-%d') }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No no-hitters thrown against this team.</p>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

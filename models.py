@@ -1,9 +1,10 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from datetime import datetime
 
 db = SQLAlchemy()
 
-# Reflect Lahman tables
+# Reflect Lahman tables - these are read-only reflections of the existing tables
 class Team(db.Model):
     __tablename__ = 'teams'
     __table_args__ = {
@@ -11,6 +12,8 @@ class Team(db.Model):
         'mysql_charset': 'utf8mb3',
         'mysql_collate': 'utf8mb3_general_ci'
     }
+    # These columns should match exactly what's in the Lahman database
+    # We're not creating a new table, just reflecting the existing one
     teams_ID = db.Column(db.Integer, primary_key=True, autoincrement=True)
     teamID = db.Column(db.CHAR(3), nullable=False)
     yearID = db.Column(db.SmallInteger, nullable=False)
@@ -19,19 +22,21 @@ class Team(db.Model):
     franchID = db.Column(db.String(3))
     team_name = db.Column(db.String(50))
 
-class Player(db.Model):
+class Person(db.Model):
     __tablename__ = 'people'
     __table_args__ = {
         'extend_existing': True,
         'mysql_charset': 'utf8mb3',
         'mysql_collate': 'utf8mb3_general_ci'
     }
+    # These columns should match exactly what's in the Lahman database
+    # We're not creating a new table, just reflecting the existing one
     playerID = db.Column(db.String(9), primary_key=True)
     nameFirst = db.Column(db.String(255))
     nameLast = db.Column(db.String(255))
 
 # Application-specific tables
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = 'app_users'
     __table_args__ = {
         'mysql_charset': 'utf8mb3',
@@ -48,54 +53,73 @@ class User(db.Model):
     trivia_history = db.relationship('UserTriviaHistory', backref='user', lazy=True)
     lifelines = db.relationship('UserLifeline', backref='user', lazy=True)
 
+class UserSelectionLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('app_users.id'), nullable=False)
+    team_name = db.Column(db.String(100), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
 class NoHitter(db.Model):
-    __tablename__ = 'app_no_hitters'
+    __tablename__ = 'no_hitters'
     __table_args__ = {
         'mysql_charset': 'utf8mb3',
         'mysql_collate': 'utf8mb3_general_ci'
     }
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.Date, nullable=False)
-    pitchers = db.Column(db.String(255), nullable=False)
     team = db.Column(db.String(100), nullable=False)
     opponent = db.Column(db.String(100), nullable=False)
     score = db.Column(db.String(20), nullable=False)
     is_perfect_game = db.Column(db.Boolean, default=False)
-    player_id = db.Column(db.String(9), db.ForeignKey('people.playerID', name='fk_player_id'))
-    team_id = db.Column(db.Integer, db.ForeignKey('teams.teams_ID', name='fk_team_id'))
-    opponent_team_id = db.Column(db.Integer, db.ForeignKey('teams.teams_ID', name='fk_opponent_team_id'))
+    team_id = db.Column(db.Integer, db.ForeignKey('teams.teams_ID', name='fk_no_hitter_team_id'))
+    opponent_team_id = db.Column(db.Integer, db.ForeignKey('teams.teams_ID', name='fk_no_hitter_opponent_team_id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    pitchers = db.relationship('Person', secondary='no_hitter_pitchers', backref='no_hitters')
+
+class NoHitterPitcher(db.Model):
+    __tablename__ = 'no_hitter_pitchers'
+    __table_args__ = {
+        'mysql_charset': 'utf8mb3',
+        'mysql_collate': 'utf8mb3_general_ci'
+    }
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    no_hitter_id = db.Column(db.Integer, db.ForeignKey('no_hitters.id', name='fk_no_hitter_id'))
+    player_id = db.Column(db.String(9), db.ForeignKey('people.playerID', name='fk_pitcher_id'))
+    is_primary = db.Column(db.Boolean, default=False)  # True for the main pitcher
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class UserTriviaHistory(db.Model):
-    __tablename__ = 'app_trivia_history'  # Changed to avoid conflict
+    __tablename__ = 'app_trivia_history'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('app_users.id'), nullable=False)
     question_id = db.Column(db.Integer, db.ForeignKey('app_trivia_questions.id'), nullable=False)
     user_answer = db.Column(db.String(255))
     is_correct = db.Column(db.Boolean)
     points_earned = db.Column(db.Integer)
-    lifelines_used = db.Column(db.JSON)  # Store which lifelines were used
+    lifelines_used = db.Column(db.JSON)
     answered_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class TriviaQuestion(db.Model):
-    __tablename__ = 'app_trivia_questions'  # Changed to avoid conflict
+    __tablename__ = 'app_trivia_questions'
     id = db.Column(db.Integer, primary_key=True)
     question_text = db.Column(db.Text, nullable=False)
     correct_answer = db.Column(db.String(255), nullable=False)
-    options = db.Column(db.JSON)  # Store multiple choice options as JSON
-    level = db.Column(db.Integer)  # 1-15 for Millionaire levels
-    prize_money = db.Column(db.Integer)  # Prize money for this level
-    is_safe_haven = db.Column(db.Boolean, default=False)  # True for levels 5, 10, 15
+    options = db.Column(db.JSON)
+    level = db.Column(db.Integer)
+    prize_money = db.Column(db.Integer)
+    is_safe_haven = db.Column(db.Boolean, default=False)
     category = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     created_by = db.Column(db.Integer, db.ForeignKey('app_users.id'))
     is_active = db.Column(db.Boolean, default=True)
 
 class UserLifeline(db.Model):
-    __tablename__ = 'app_lifelines'  # Changed to avoid conflict
+    __tablename__ = 'app_lifelines'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('app_users.id'), nullable=False)
-    lifeline_type = db.Column(db.String(20))  # 'fifty_fifty', 'phone_friend', 'ask_audience'
+    lifeline_type = db.Column(db.String(20))
     is_used = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
