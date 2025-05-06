@@ -12,17 +12,22 @@
             margin: 0;
             padding: 20px;
             line-height: 1.6;
+            background: #181a1b !important;
+            color: #f2f2f2 !important;
         }
         .nav {
             margin-bottom: 20px;
+            text-align: center;
         }
         .nav a {
-            margin-right: 10px;
+            margin-right: 18px;
             text-decoration: none;
-            color: #333;
+            color: #fff;
+            font-size: 1.15em;
+            font-weight: bold;
         }
         .nav a:hover {
-            color: #666;
+            color: #7CFC98;
         }
         .flash-messages {
             margin-bottom: 20px;
@@ -40,6 +45,14 @@
             background-color: #d4edda;
             color: #155724;
         }
+        .card, .trivia-card, .hl-card {
+            background: #232527 !important;
+            color: #fff !important;
+        }
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
     </style>
 </head>
 <body>
@@ -47,6 +60,7 @@
         <a href="{{ url_for('main.index') }}">Home</a>
         {% if session.get('user_id') %}
             <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('main.team_nohitters') }}">No Hitters</a>
             <a href="{{ url_for('trivia.play_trivia') }}">Play Trivia</a>
             <a href="{{ url_for('higher_lower.higher_lower') }}">Play Higher or Lower</a>
             <a href="{{ url_for('guess_player.guess_player_page') }}">Guess the Player</a>
@@ -70,7 +84,7 @@
         {% endwith %}
     </div>
 
-    <div class="content">
+    <div class="content" style="text-align:center;">
         {% block content %}{% endblock %}
     </div>
     {% block scripts %}{% endblock %}

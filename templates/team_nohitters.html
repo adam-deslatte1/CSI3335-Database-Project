@@ -23,7 +23,15 @@
         {% if thrown_by %}
             <ul>
                 {% for nh in thrown_by %}
-                    <li>{{ nh.pitcher }} on {{ nh.date.strftime('%Y-%m-%d') }} vs {{ nh.opponent }}</li>
+                    <li>
+                        <strong>{{ nh.date.strftime('%Y-%m-%d') }}</strong>
+                        vs {{ nh.opponent }} — Score: {{ nh.score }}
+                        {% if nh.is_perfect_game %}
+                            <span class="badge bg-warning text-dark">Perfect Game!</span>
+                        {% endif %}
+                        <br>
+                        <em>Pitchers:</em> {{ nh.pitchers | join(', ') }}
+                    </li>
                 {% endfor %}
             </ul>
         {% else %}
@@ -34,12 +42,21 @@
         {% if thrown_against %}
             <ul>
                 {% for nh in thrown_against %}
-                    <li>{{ nh.pitcher }} ({{ nh.team }}) on {{ nh.date.strftime('%Y-%m-%d') }}</li>
+                    <li>
+                        <strong>{{ nh.date.strftime('%Y-%m-%d') }}</strong>
+                        by {{ nh.team }} — Score: {{ nh.score }}
+                        {% if nh.is_perfect_game %}
+                            <span class="badge bg-warning text-dark">Perfect Game!</span>
+                        {% endif %}
+                        <br>
+                        <em>Pitchers:</em> {{ nh.pitchers | join(', ') }}
+                    </li>
                 {% endfor %}
             </ul>
         {% else %}
             <p>No no-hitters thrown against this team.</p>
         {% endif %}
     {% endif %}
+
 </div>
 {% endblock %}

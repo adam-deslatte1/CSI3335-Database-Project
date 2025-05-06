@@ -5,7 +5,7 @@ import random
 from sqlalchemy import text, create_engine
 
 # === SQLAlchemy Setup ===
-engine = create_engine(f"mysql+mysqlconnector://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}")
+engine = create_engine(f"mysql+pymysql://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}")
 
 
 # === Helper ===
