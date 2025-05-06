@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from models import db, NoHitter, Team, Player
+from models import db, NoHitter, Team, Person, NoHitterPitcher
 from app import app
 
 def parse_no_hitter_lines(pitcher_line, game_line):
@@ -122,7 +122,38 @@ def get_or_create_team(name):
         'Eclipse': 'Louisville Eclipse',
         'Bisons': 'Buffalo Bisons',
         'Stars': 'Syracuse Stars',
-        'Broncos': 'Syracuse Broncos'
+        'Broncos': 'Syracuse Broncos',
+        # Modern team nicknames
+        'Cubs': 'Chicago Cubs',
+        'Reds': 'Cincinnati Reds',
+        'Nationals': 'Washington Nationals',
+        'Astros': 'Houston Astros',
+        'Phillies': 'Philadelphia Phillies',
+        'Tigers': 'Detroit Tigers',
+        'Athletics': 'Oakland Athletics',
+        'Yankees': 'New York Yankees',
+        'Angels': 'Los Angeles Angels',
+        'Mets': 'New York Mets',
+        'Brewers': 'Milwaukee Brewers',
+        'Dodgers': 'Los Angeles Dodgers',
+        'Rangers': 'Texas Rangers',
+        'Mariners': 'Seattle Mariners',
+        'Indians': 'Cleveland Indians',
+        'White Sox': 'Chicago White Sox',
+        'Blue Jays': 'Toronto Blue Jays',
+        'Twins': 'Minnesota Twins',
+        'Rays': 'Tampa Bay Rays',
+        'Marlins': 'Miami Marlins',
+        'Padres': 'San Diego Padres',
+        'Pirates': 'Pittsburgh Pirates',
+        'Giants': 'San Francisco Giants',
+        'Braves': 'Atlanta Braves',
+        'Cardinals': 'St. Louis Cardinals',
+        'Expos': 'Montreal Expos',
+        'Royals': 'Kansas City Royals',
+        'Orioles': 'Baltimore Orioles',
+        'Red Sox': 'Boston Red Sox',
+        'Rockies': 'Colorado Rockies'
     }
     
     # Look up team in Lahman database by team name
@@ -162,40 +193,49 @@ def get_or_create_player(full_name):
         'Lee Richmond': 'Lee Richmond',
         'George Bradley': 'George Bradley'
     }
+    
+    # Split name into first and last
+    name_parts = full_name.split()
+    if len(name_parts) < 2:
+        print(f"Warning: Invalid player name format: {full_name}")
+        return None
+        
+    first = name_parts[0]
+    last = name_parts[-1]
+    
     # Look up player in Lahman database
-    names = full_name.split()
-    first = names[0]
-    last = ' '.join(names[1:]) if len(names) > 1 else ''
-    # Try exact match first
-    player = Player.query.filter_by(nameFirst=first, nameLast=last).first()
-    if not player:
-        # Try mapped name
-        mapped_name = player_mapping.get(full_name)
-        if mapped_name:
-            names = mapped_name.split()
-            first = names[0]
-            last = ' '.join(names[1:]) if len(names) > 1 else ''
-            player = Player.query.filter_by(nameFirst=first, nameLast=last).first()
-        if not player:
-            # Try partial match on last name
-            player = Player.query.filter(Player.nameLast.like(f"%{last}%")).first()
-            if not player:
+    try:
+        # First try exact match
+        person = Person.query.filter_by(nameFirst=first, nameLast=last).first()
+        if not person:
+            # Try with mapped name if available
+            mapped_name = player_mapping.get(full_name)
+            if mapped_name:
+                first, last = mapped_name.split()
+                person = Person.query.filter_by(nameFirst=first, nameLast=last).first()
+            if not person:
+                # Try partial match on last name
+                person = Person.query.filter(Person.nameLast.like(f"%{last}%")).first()
+            if not person:
                 # Generate Lahman-style playerID
                 def make_playerid(first, last, num):
-                    last_part = (last.lower() + 'xxxxx')[:5]
-                    first_part = (first.lower() + 'xx')[:2]
-                    return f"{last_part}{first_part}{num:02d}"
+                    return f"{last[:5].lower()}{first[:2].lower()}{num:02d}"
+                
+                # Find next available number
                 num = 1
                 playerID = make_playerid(first, last, num)
-                # Ensure uniqueness
-                while Player.query.filter_by(playerID=playerID).first():
+                while Person.query.filter_by(playerID=playerID).first():
                     num += 1
                     playerID = make_playerid(first, last, num)
+                
                 print(f"Adding missing player '{full_name}' to database with playerID '{playerID}'.")
-                player = Player(playerID=playerID, nameFirst=first, nameLast=last)
-                db.session.add(player)
-                db.session.commit()
-    return player
+                person = Person(playerID=playerID, nameFirst=first, nameLast=last)
+                db.session.add(person)
+                
+        return person
+    except Exception as e:
+        print(f"Error looking up player {full_name}: {str(e)}")
+        return None
 
 def import_no_hitters_from_file(filename):
     with open(filename, 'r') as f:
@@ -211,33 +251,53 @@ def import_no_hitters_from_file(filename):
         if not data:
             print(f"Could not parse: {pitcher_line}\n{game_line}")
             continue
-        pitcher_names = data['pitchers']
-        main_pitcher = get_or_create_player(pitcher_names[0])
-        if not main_pitcher:
-            print(f"Skipping no-hitter due to missing pitcher: {pitcher_names[0]}")
+        
+        # Get all pitchers
+        pitchers = []
+        for idx, pitcher_name in enumerate(data['pitchers']):
+            pitcher = get_or_create_player(pitcher_name)
+            if not pitcher:
+                print(f"Skipping no-hitter due to missing pitcher: {pitcher_name}")
+                continue
+            pitchers.append((pitcher, idx == 0))  # Tuple of (pitcher, is_primary)
+        
+        if not pitchers:
             continue
+            
         team = get_or_create_team(data['team'])
         if not team:
             print(f"Skipping no-hitter due to missing team: {data['team']}")
             missing_teams.add(data['team'])
             continue
+            
         opponent = get_or_create_team(data['opponent'])
         if not opponent:
             print(f"Skipping no-hitter due to missing opponent: {data['opponent']}")
             missing_teams.add(data['opponent'])
             continue
+            
+        # Create the no-hitter record
         no_hitter = NoHitter(
             date=data['date'],
-            pitchers=', '.join(pitcher_names),
             team=data['team'],
             opponent=data['opponent'],
             score=data['score'],
             is_perfect_game=data['is_perfect_game'],
-            player_id=main_pitcher.playerID,
             team_id=team.teams_ID,
             opponent_team_id=opponent.teams_ID
         )
         db.session.add(no_hitter)
+        db.session.flush()  # Get the no_hitter.id
+        
+        # Create pitcher records
+        for pitcher, is_primary in pitchers:
+            pitcher_record = NoHitterPitcher(
+                no_hitter_id=no_hitter.id,
+                player_id=pitcher.playerID,
+                is_primary=is_primary
+            )
+            db.session.add(pitcher_record)
+            
     db.session.commit()
     if missing_teams:
         print("\nTeams not found in Lahman database:")
