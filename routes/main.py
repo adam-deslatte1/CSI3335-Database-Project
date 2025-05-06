@@ -1,14 +1,13 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, flash
 from flask_login import login_required, current_user
-from models import db, User, UserSelectionLog, NoHitter
+from models import db, User, UserSelectionLog, NoHitter, Team
+from sqlalchemy import text
 
 main = Blueprint('main', __name__)
 
 def get_all_team_names():
-    teams = db.session.query(teams.team_name).distinct().all()
-    opponents = db.session.query(NoHitter.opponent).distinct().all()
-    all_teams = set([t[0] for t in teams] + [o[0] for o in opponents])
-    return sorted(all_teams)
+    teams = db.session.query(Team.team_name).distinct().all()
+    return sorted(set([t[0] for t in teams]))
 
 @main.route('/')
 def index():
@@ -32,17 +31,29 @@ def team_nohitters():
 
     if request.method == 'POST':
         selected_team = request.form.get('team_name')
-        
-        if selected_team:
-            # Log the selection
-            log = UserSelectionLog(user_id=current_user.id, team_name=selected_team)
-            db.session.add(log)
-            db.session.commit()
 
-            # Fetch no-hitters
-            thrown_by = NoHitter.query.filter_by(team=selected_team).all()
-            thrown_against = NoHitter.query.filter_by(opponent=selected_team).all()
+        # Get ALL team IDs with the selected name
+        selected_team_ids = db.session.query(Team.teams_ID).filter_by(team_name=selected_team).all()
+        selected_team_ids = [t[0] for t in selected_team_ids]
+
+        print(f"Selected Team IDs: {selected_team_ids}")
+
+        if selected_team_ids:
+            # Log the selection
+            if current_user.is_authenticated:
+                log = UserSelectionLog(user_id=current_user.id, team_name=selected_team)
+                db.session.add(log)
+                db.session.commit()
+
+            # Query where team_id matches ANY of the IDs
+            thrown_by = db.session.query(NoHitter).filter(NoHitter.team_id.in_(selected_team_ids)).all()
+            thrown_against = db.session.query(NoHitter).filter(NoHitter.opponent_team_id.in_(selected_team_ids)).all()
+
+            print(f"Thrown By: {thrown_by}")
+            print(f"Thrown Against: {thrown_against}")
+
         else:
             flash('Please select a valid team.', 'danger')
 
     return render_template('team_nohitters.html', teams=teams, selected_team=selected_team, thrown_by=thrown_by, thrown_against=thrown_against)
+

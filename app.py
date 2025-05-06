@@ -6,11 +6,8 @@ from routes.auth import auth
 from routes.main import main
 from routes.trivia import trivia
 from routes.admin import admin
-
 from flask_wtf import CSRFProtect
-
-
-
+from flask_login import LoginManager
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
@@ -19,15 +16,25 @@ app.secret_key = 'super_secret_key'
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Initialize extensions
+db.init_app(app)
+csrf = CSRFProtect(app)
+
+# Setup Login Manager
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+login_manager.init_app(app)
+
+# User loader function
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # Register blueprints
 app.register_blueprint(auth)
 app.register_blueprint(main)
 app.register_blueprint(trivia)
 app.register_blueprint(admin)
-
-db.init_app(app)
-
-csrf = CSRFProtect(app)
 
 # Create tables and admin user at app startup
 with app.app_context():
@@ -36,12 +43,12 @@ with app.app_context():
     
     # Create admin user if not exists
     if not User.query.filter_by(username='admin').first():
-        admin = User(
+        admin_user = User(
             username='admin',
             password_hash=generate_password_hash('admin123', salt_length=8),
             is_admin=True
         )
-        db.session.add(admin)
+        db.session.add(admin_user)
         db.session.commit()
 
 if __name__ == '__main__':

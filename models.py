@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import UserMixin
 from datetime import datetime
 
 db = SQLAlchemy()
@@ -35,7 +36,7 @@ class Person(db.Model):
     nameLast = db.Column(db.String(255))
 
 # Application-specific tables
-class User(db.Model):
+class User(db.Model, UserMixin):
     __tablename__ = 'app_users'
     __table_args__ = {
         'mysql_charset': 'utf8mb3',
@@ -51,6 +52,12 @@ class User(db.Model):
     last_login = db.Column(db.DateTime)
     trivia_history = db.relationship('UserTriviaHistory', backref='user', lazy=True)
     lifelines = db.relationship('UserLifeline', backref='user', lazy=True)
+
+class UserSelectionLog(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('app_users.id'), nullable=False)
+    team_name = db.Column(db.String(100), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class NoHitter(db.Model):
     __tablename__ = 'no_hitters'
