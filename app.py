@@ -7,6 +7,11 @@ from routes.main import main
 from routes.trivia import trivia
 from routes.admin import admin
 
+from flask_wtf import CSRFProtect
+
+
+
+
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
 
@@ -21,6 +26,8 @@ app.register_blueprint(trivia)
 app.register_blueprint(admin)
 
 db.init_app(app)
+
+csrf = CSRFProtect(app)
 
 # Create tables and admin user at app startup
 with app.app_context():
