@@ -59,6 +59,7 @@
         <a href="{{ url_for('main.index') }}">Home</a>
         {% if session.get('user_id') %}
             <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('main.team_nohitters') }}">No Hitters</a>
             <a href="{{ url_for('trivia.play_trivia') }}">Play Trivia</a>
             <a href="{{ url_for('higher_lower.higher_lower') }}">Play Higher or Lower</a>
             {% if session.get('is_admin') %}
