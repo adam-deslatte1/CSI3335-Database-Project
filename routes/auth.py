@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from models import db, User
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from flask_login import login_user
 
 auth = Blueprint('auth', __name__)
 
@@ -28,6 +29,7 @@ def login():
             if user.is_banned:
                 flash('Your account has been banned', 'error')
                 return redirect(url_for('auth.login'))
+            login_user(user)
             session['user_id'] = user.id
             session['username'] = user.username
             session['is_admin'] = user.is_admin

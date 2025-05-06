@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+.hl-game-flex {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 40px;
+    margin-bottom: 32px;
+    min-height: 220px;
+}
+.hl-card {
+    background: #181a1b;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    padding: 32px 36px;
+    min-width: 220px;
+    min-height: 180px;
+    text-align: center;
+    transition: transform 0.5s cubic-bezier(.4,2.08,.55,.44), opacity 0.5s;
+    color: #fff;
+    font-size: 1.1em;
+    position: relative;
+}
+.hl-card.left {
+    z-index: 2;
+}
+.hl-card.right {
+    z-index: 1;
+}
+.hl-card.slide-left {
+    transform: translateX(-260px) scale(0.95);
+    opacity: 0.7;
+}
+.hl-card.slide-in {
+    transform: translateX(260px) scale(1.05);
+    opacity: 0.7;
+}
+.hl-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    justify-content: center;
+}
+.hl-btn {
+    min-width: 120px;
+    width: auto;
+    font-size: 1.2em;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 36px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    text-align: center;
+    display: inline-block;
+}
+.hl-btn.higher {
+    background: #28a745;
+    color: #fff;
+}
+.hl-btn.higher:hover {
+    background: #218838;
+}
+.hl-btn.lower {
+    background: #dc3545;
+    color: #fff;
+}
+.hl-btn.lower:hover {
+    background: #b71c2b;
+}
+.hl-streak {
+    text-align: center;
+    margin-bottom: 18px;
+    font-size: 1.3em;
+}
+.hl-message {
+    text-align: center;
+    font-size: 1.2em;
+    margin-top: 18px;
+    font-weight: bold;
+}
+.stat-correct {
+    font-size: 2.2em;
+    color: #28a745;
+    font-weight: bold;
+}
+.stat-incorrect {
+    font-size: 2.2em;
+    color: #dc3545;
+    font-weight: bold;
+}
+.stat-hidden {
+    font-size: 2.2em;
+    color: #bbb;
+    font-weight: bold;
+}
+.hl-gameover-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+}
+.hl-gameover-message {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1001;
+    text-align: center;
+}
+.hl-gameover-btns {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin-top: 24px;
+}
+.hl-btn.hl-btn-lg {
+    font-size: 1.3em;
+    padding: 16px 36px;
+    border-radius: 10px;
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s, color 0.2s;
+}
+.hl-btn-success {
+    background: #28a745;
+    color: #fff;
+    border: none;
+}
+.hl-btn-success:hover {
+    background: #218838;
+    color: #fff;
+}
+.hl-btn-outline {
+    background: transparent;
+    color: #007bff;
+    border: 2px solid #007bff;
+}
+.hl-btn-outline:hover {
+    background: #007bff;
+    color: #fff;
+}
+</style>
+<div style="max-width: 800px; margin: 40px auto; padding: 32px; background: #222; border-radius: 18px; box-shadow: 0 2px 16px rgba(0,0,0,0.10);">
+    <h2 class="text-center mb-4" style="color:#fff;">Higher or Lower: Baseball Edition</h2>
+    <div class="hl-streak">
+        Current Streak: <span style="color: #007bff; font-weight: bold;">{{ streak }}</span>
+    </div>
+    <div class="hl-game-flex" id="hlGameFlex">
+        <div class="hl-card left" id="leftCard">
+            <div style="color: #bbb; font-size: 1em;">Left Player</div>
+            <div style="font-size: 1.5em; font-weight: bold; margin-bottom: 8px;">{{ left.nameFirst }} {{ left.nameLast }}</div>
+            <div style="margin-top: 12px; font-size: 1.1em; color: #ccc;">{{ stat_label }}:</div>
+            <div style="font-size: 2.2em; color: #28a745; font-weight: bold;">{{ left.stat }}</div>
+        </div>
+        <div class="hl-buttons" id="hlButtons" {% if reveal or game_over %}style="display:none;"{% endif %}>
+            <form method="post" id="hlForm" style="display: flex; flex-direction: column; gap: 14px; align-items: center;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" name="guess" value="higher" class="hl-btn higher">Higher</button>
+                <button type="submit" name="guess" value="lower" class="hl-btn lower">Lower</button>
+            </form>
+        </div>
+        <div class="hl-card right" id="rightCard">
+            <div style="color: #bbb; font-size: 1em;">Right Player</div>
+            <div style="font-size: 1.5em; font-weight: bold; margin-bottom: 8px;">{{ right.nameFirst }} {{ right.nameLast }}</div>
+            <div style="margin-top: 12px; font-size: 1.1em; color: #ccc;">{{ stat_label }}:</div>
+            {% if reveal %}
+                {% if last_correct %}
+                    <div id="rightStat" class="stat-correct">{{ right.stat }}</div>
+                {% else %}
+                    <div id="rightStat" class="stat-incorrect">{{ right.stat }}</div>
+                {% endif %}
+            {% else %}
+                <div id="rightStat" class="stat-hidden">?</div>
+            {% endif %}
+        </div>
+    </div>
+    {% if reveal and not game_over %}
+        <div style="display: flex; flex-direction: column; align-items: center; margin-top: 24px;">
+            <div id="hlMessage" class="hl-message" style="margin-bottom: 18px;">
+                {% if last_correct %}
+                    Correct! Keep going!
+                {% else %}
+                    Incorrect! The correct value was {{ right.stat }}.
+                {% endif %}
+            </div>
+            <form method="post" id="hlNextForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% if last_correct %}
+                    <button type="submit" name="next" value="1" class="hl-btn hl-btn-lg hl-btn-success">Next</button>
+                {% else %}
+                    <button type="submit" name="continue" value="1" class="hl-btn hl-btn-lg hl-btn-success">Continue</button>
+                {% endif %}
+            </form>
+        </div>
+    {% endif %}
+    {% if game_over %}
+        <div class="hl-gameover-overlay"></div>
+        <div class="hl-gameover-message">
+            <div class="alert alert-danger" style="font-size: 2em; font-weight: bold; padding: 32px; border-radius: 16px; background: #dc3545; color: #fff; box-shadow: 0 2px 16px rgba(0,0,0,0.15);">
+                Game Over!<br>Your streak was <b>{{ streak }}</b>.
+            </div>
+            <div class="hl-gameover-btns">
+                <a href="{{ url_for('higher_lower.higher_lower_retry') }}" class="hl-btn hl-btn-lg hl-btn-success">Play Again</a>
+                <a href="{{ url_for('higher_lower.higher_lower_leaderboard') }}" class="hl-btn hl-btn-lg hl-btn-outline">Leaderboard</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+<script>
+    // Define variables directly from server-rendered values
+    // Use JSON.parse with string literals to avoid syntax errors
+    var reveal = JSON.parse('{% if reveal %}true{% else %}false{% endif %}');
+    var gameOver = JSON.parse('{% if game_over %}true{% else %}false{% endif %}');
+    var lastCorrect = JSON.parse('{% if last_correct %}true{% else %}false{% endif %}');
+    
+    function animateCards() {
+        const leftCard = document.getElementById('leftCard');
+        const rightCard = document.getElementById('rightCard');
+        leftCard.classList.add('slide-left');
+        rightCard.classList.add('slide-in');
+        setTimeout(() => {
+            leftCard.classList.remove('slide-left');
+            rightCard.classList.remove('slide-in');
+        }, 500);
+    }
+    
+    // Remove the auto-submit behavior
+    // if (reveal && !gameOver) {
+    //     setTimeout(() => {
+    //         animateCards();
+    //         document.getElementById('hlForm').submit();
+    //     }, 1200); // 1.2s delay for stat reveal
+    // }
+</script>
+{% endblock %}
