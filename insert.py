@@ -6,7 +6,7 @@ from questions import QUESTIONS
 mysql = {
     'location': '127.0.0.1',
     'user': 'root',
-    'password': 'cybears',
+    'password': 'password',
     'database': 'baseball'
 }
 

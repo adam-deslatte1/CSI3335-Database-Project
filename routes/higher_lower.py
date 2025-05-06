@@ -6,19 +6,43 @@ import random
 
 game = Blueprint('higher_lower', __name__)
 
-# Common batting stats to use
-BATTING_STATS = [
-    ('b_HR', 'Home Runs'),
-    ('b_H', 'Hits'),
-    ('b_RBI', 'Runs Batted In'),
-    ('b_SB', 'Stolen Bases'),
-    ('b_BB', 'Walks'),
-    ('b_SO', 'Strikeouts'),
-    ('b_R', 'Runs'),
-    ('b_2B', 'Doubles'),
-    ('b_3B', 'Triples'),
-    ('b_G', 'Games Played'),
-    ('b_AB', 'At Bats'),
+ALL_STATS = [
+    # Batting
+    ('batting', 'b_HR', 'Home Runs', False, False),
+    ('batting', 'b_H', 'Hits', False, False),
+    ('batting', 'b_RBI', 'Runs Batted In', False, False),
+    ('batting', 'b_SB', 'Stolen Bases', False, False),
+    ('batting', 'b_BB', 'Walks', False, False),
+    ('batting', 'b_SO', 'Strikeouts', False, False),
+    ('batting', 'b_R', 'Runs', False, False),
+    ('batting', 'b_2B', 'Doubles', False, False),
+    ('batting', 'b_3B', 'Triples', False, False),
+    ('batting', 'b_G', 'Games Played', False, False),
+    ('batting', 'b_AB', 'At Bats', False, False),
+    # Pitching
+    ('pitching', 'p_W', 'Wins', False, False),
+    ('pitching', 'p_L', 'Losses', False, False),
+    ('pitching', 'p_SV', 'Saves', False, False),
+    ('pitching', 'p_SO', 'Strikeouts (Pitching)', False, False),
+    ('pitching', 'p_ERA', 'Earned Run Average', True, False),
+    ('pitching', 'p_G', 'Games Pitched', False, False),
+    ('pitching', 'p_SHO', 'Shutouts', False, False),
+    ('pitching', 'p_CG', 'Complete Games', False, False),
+    ('pitching', 'p_IPOuts', 'Innings Pitched (Outs)', False, False),
+    ('pitching', 'p_H', 'Hits Allowed', False, False),
+    ('pitching', 'p_BB', 'Walks Allowed', False, False),
+    ('pitching', 'p_HR', 'Home Runs Allowed', False, False),
+    # Fielding
+    ('fielding', 'f_G', 'Games (Fielding)', False, False),
+    ('fielding', 'f_GS', 'Games Started (Fielding)', False, False),
+    ('fielding', 'f_PO', 'Putouts', False, False),
+    ('fielding', 'f_A', 'Assists', False, False),
+    ('fielding', 'f_E', 'Errors', False, False),
+    ('fielding', 'f_DP', 'Double Plays', False, False),
+    # Salaries
+    ('salaries', 'salary', 'Career Salary', True, False),
+    # Awards
+    ('awards', 'awardID', 'Total Awards Won', False, True),
 ]
 
 from sqlalchemy import text
@@ -42,13 +66,22 @@ def get_random_player(exclude_player_id=None):
         }
     return None
 
-def get_player_stat(playerID, stat_col):
-    query = f"""
-        SELECT SUM(b.{stat_col}) as stat
-        FROM batting b
-        WHERE b.playerID = :playerID
-    """
+def get_player_stat(playerID, table, col, is_float=False, is_count=False):
+    if table == 'batting':
+        query = f"SELECT SUM({col}) FROM batting WHERE playerID = :playerID"
+    elif table == 'pitching':
+        query = f"SELECT SUM({col}) FROM pitching WHERE playerID = :playerID"
+    elif table == 'fielding':
+        query = f"SELECT SUM({col}) FROM fielding WHERE playerID = :playerID"
+    elif table == 'salaries':
+        query = f"SELECT SUM({col}) FROM salaries WHERE playerID = :playerID"
+    elif table == 'awards' and is_count:
+        query = f"SELECT COUNT(*) FROM awards WHERE playerID = :playerID"
+    else:
+        return 0
     result = db.session.execute(text(query), {'playerID': playerID}).first()
+    if is_float:
+        return float(result[0]) if result and result[0] is not None else 0.0
     return int(result[0]) if result and result[0] is not None else 0
 
 @game.route('/higher_lower', methods=['GET', 'POST'])
@@ -61,11 +94,12 @@ def higher_lower():
         if 'guess' in request.form:
             left = session.get('hl_left')
             right = session.get('hl_right')
-            stat_col = session.get('hl_stat_col')
+            stat_info = session.get('hl_stat_info')
             guess = request.form.get('guess')
-            if not left or not right or not stat_col or not guess:
+            if not left or not right or not stat_info or not guess:
                 flash('Game state error. Please try again.', 'danger')
                 return redirect(url_for('higher_lower.higher_lower'))
+            table, col, label, is_float, is_count = stat_info
             left_val = left['stat']
             right_val = right['stat']
             correct = (
@@ -92,16 +126,16 @@ def higher_lower():
         elif 'next' in request.form:
             if session.get('hl_last_correct'):
                 # Pick a new stat to compare
-                stat_col, stat_label = random.choice(BATTING_STATS)
-                # Move right to left, recalculate stat for new stat_col
+                stat_info = random.choice(ALL_STATS)
+                table, col, label, is_float, is_count = stat_info
+                # Move right to left, recalculate stat for new stat_info
                 left_player = session['hl_right']
-                left_player['stat'] = get_player_stat(left_player['playerID'], stat_col)
+                left_player['stat'] = get_player_stat(left_player['playerID'], table, col, is_float, is_count)
                 session['hl_left'] = left_player
-                session['hl_stat_col'] = stat_col
-                session['hl_stat_label'] = stat_label
-                # Pick a new right player and calculate their stat for the same stat_col
+                session['hl_stat_info'] = stat_info
+                # Pick a new right player and calculate their stat for the same stat_info
                 new_right = get_random_player(exclude_player_id=left_player['playerID'])
-                new_right['stat'] = get_player_stat(new_right['playerID'], stat_col)
+                new_right['stat'] = get_player_stat(new_right['playerID'], table, col, is_float, is_count)
                 session['hl_right'] = new_right
                 session['hl_reveal'] = False
                 session['hl_last_correct'] = None
@@ -115,15 +149,15 @@ def higher_lower():
     # GET: start or continue game
     if 'hl_left' not in session or 'hl_right' not in session:
         # Pick a stat to compare
-        stat_col, stat_label = random.choice(BATTING_STATS)
+        stat_info = random.choice(ALL_STATS)
+        table, col, label, is_float, is_count = stat_info
         left = get_random_player()
-        left['stat'] = get_player_stat(left['playerID'], stat_col)
+        left['stat'] = get_player_stat(left['playerID'], table, col, is_float, is_count)
         right = get_random_player(exclude_player_id=left['playerID'])
-        right['stat'] = get_player_stat(right['playerID'], stat_col)
+        right['stat'] = get_player_stat(right['playerID'], table, col, is_float, is_count)
         session['hl_left'] = left
         session['hl_right'] = right
-        session['hl_stat_col'] = stat_col
-        session['hl_stat_label'] = stat_label
+        session['hl_stat_info'] = stat_info
         session['hl_streak'] = 0
         session.pop('hl_game_over', None)
         session['hl_last_correct'] = None
@@ -134,7 +168,7 @@ def higher_lower():
     return render_template('higher_lower.html',
         left=session['hl_left'],
         right=session['hl_right'],
-        stat_label=session['hl_stat_label'],
+        stat_label=session['hl_stat_info'][2],
         streak=session['hl_streak'],
         reveal=session.get('hl_reveal', False),
         last_correct=session.get('hl_last_correct', None),
@@ -147,8 +181,7 @@ def higher_lower_retry():
     # Reset game state
     session.pop('hl_left', None)
     session.pop('hl_right', None)
-    session.pop('hl_stat_col', None)
-    session.pop('hl_stat_label', None)
+    session.pop('hl_stat_info', None)
     session['hl_streak'] = 0
     session.pop('hl_game_over', None)
     session['hl_reveal'] = False
