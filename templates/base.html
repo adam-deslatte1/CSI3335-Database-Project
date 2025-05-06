@@ -42,17 +42,17 @@
 </head>
 <body>
     <div class="nav">
-        <a href="{{ url_for('index') }}">Home</a>
+        <a href="{{ url_for('main.index') }}">Home</a>
         {% if session.get('user_id') %}
-            <a href="{{ url_for('dashboard') }}">Dashboard</a>
-            <a href="{{ url_for('trivia') }}">Play Trivia</a>
+            <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+            <a href="{{ url_for('trivia.play_trivia') }}">Play Trivia</a>
             {% if session.get('is_admin') %}
-                <a href="{{ url_for('admin_dashboard') }}">Admin</a>
+                <a href="{{ url_for('admin.admin_dashboard') }}">Admin</a>
             {% endif %}
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('auth.logout') }}">Logout</a>
         {% else %}
-            <a href="{{ url_for('login') }}">Login</a>
-            <a href="{{ url_for('register') }}">Register</a>
+            <a href="{{ url_for('auth.login') }}">Login</a>
+            <a href="{{ url_for('auth.register') }}">Register</a>
         {% endif %}
     </div>
 
