@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, flash
 from flask_login import login_required, current_user
-from models import db, User, UserSelectionLog, NoHitter, Team
+from models import db, User, UserSelectionLog, NoHitter, NoHitterPitcher, Person, Team
 from sqlalchemy import text
 
 main = Blueprint('main', __name__)
@@ -45,9 +45,46 @@ def team_nohitters():
                 db.session.add(log)
                 db.session.commit()
 
-            # Query where team_id matches ANY of the IDs
-            thrown_by = db.session.query(NoHitter).filter(NoHitter.team_id.in_(selected_team_ids)).all()
-            thrown_against = db.session.query(NoHitter).filter(NoHitter.opponent_team_id.in_(selected_team_ids)).all()
+            # Query no-hitters thrown BY the team
+            nohitters_by = db.session.query(NoHitter).filter(NoHitter.team_id.in_(selected_team_ids)).all()
+            # Query no-hitters thrown AGAINST the team
+            nohitters_against = db.session.query(NoHitter).filter(NoHitter.opponent_team_id.in_(selected_team_ids)).all()
+
+            # Process "thrown by"
+            for nh in nohitters_by:
+                pitchers = (
+                    db.session.query(Person.nameFirst, Person.nameLast)
+                    .join(NoHitterPitcher, NoHitterPitcher.player_id == Person.playerID)
+                    .filter(NoHitterPitcher.no_hitter_id == nh.id)
+                    .all()
+                )
+                pitcher_names = [f"{p[0]} {p[1]}" for p in pitchers]
+
+                thrown_by.append({
+                    'date': nh.date,
+                    'pitchers': pitcher_names,
+                    'opponent': nh.opponent,
+                    'score': nh.score,
+                    'is_perfect_game': nh.is_perfect_game
+                })
+
+            # Process "thrown against"
+            for nh in nohitters_against:
+                pitchers = (
+                    db.session.query(Person.nameFirst, Person.nameLast)
+                    .join(NoHitterPitcher, NoHitterPitcher.player_id == Person.playerID)
+                    .filter(NoHitterPitcher.no_hitter_id == nh.id)
+                    .all()
+                )
+                pitcher_names = [f"{p[0]} {p[1]}" for p in pitchers]
+
+                thrown_against.append({
+                    'date': nh.date,
+                    'pitchers': pitcher_names,
+                    'team': nh.team,
+                    'score': nh.score,
+                    'is_perfect_game': nh.is_perfect_game
+                })
 
             print(f"Thrown By: {thrown_by}")
             print(f"Thrown Against: {thrown_against}")
@@ -55,5 +92,10 @@ def team_nohitters():
         else:
             flash('Please select a valid team.', 'danger')
 
-    return render_template('team_nohitters.html', teams=teams, selected_team=selected_team, thrown_by=thrown_by, thrown_against=thrown_against)
-
+    return render_template(
+        'team_nohitters.html',
+        teams=teams,
+        selected_team=selected_team,
+        thrown_by=thrown_by,
+        thrown_against=thrown_against
+    )
