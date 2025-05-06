@@ -30,6 +30,20 @@ def load_user(user_id):
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Initialize extensions
+db.init_app(app)
+csrf = CSRFProtect(app)
+
+# Setup Login Manager
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+login_manager.init_app(app)
+
+# User loader function
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # Register blueprints
 app.register_blueprint(auth)
 app.register_blueprint(main)
@@ -48,12 +62,12 @@ with app.app_context():
     
     # Create admin user if not exists
     if not User.query.filter_by(username='admin').first():
-        admin = User(
+        admin_user = User(
             username='admin',
             password_hash=generate_password_hash('admin123', salt_length=8),
             is_admin=True
         )
-        db.session.add(admin)
+        db.session.add(admin_user)
         db.session.commit()
 
 if __name__ == '__main__':
