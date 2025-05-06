@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Baseball Trivia App</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
@@ -48,6 +49,7 @@
             <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
             <a href="{{ url_for('trivia.play_trivia') }}">Play Trivia</a>
             <a href="{{ url_for('higher_lower.higher_lower') }}">Play Higher or Lower</a>
+            <a href="{{ url_for('guess_player.guess_player_page') }}">Guess the Player</a>
             {% if session.get('is_admin') %}
                 <a href="{{ url_for('admin.admin_dashboard') }}">Admin</a>
             {% endif %}
@@ -71,5 +73,6 @@
     <div class="content">
         {% block content %}{% endblock %}
     </div>
+    {% block scripts %}{% endblock %}
 </body>
 </html> 

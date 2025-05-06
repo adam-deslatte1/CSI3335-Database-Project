@@ -1,18 +1,16 @@
 from flask import Flask
-from models import db, User
+from .models import db, User
 from werkzeug.security import generate_password_hash
-from csi3335s2025 import mysql
-from routes.auth import auth
-from routes.main import main
-from routes.trivia import trivia
-from routes.admin import admin
-from routes.higher_lower import game as higher_lower_game
+from .csi3335s2025 import mysql
+from .routes.auth import auth
+from .routes.main import main
+from .routes.trivia import trivia
+from .routes.admin import admin
+from .routes.higher_lower import game as higher_lower_game
+from .routes.guess_player import guess_player
 
 from flask_wtf import CSRFProtect
 from flask_login import LoginManager
-
-
-
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
@@ -31,19 +29,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+mysqlconnector://{mysql['user']}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
-if hasattr(db, 'init_app'):
-    db.init_app(app)
+db.init_app(app)
 csrf = CSRFProtect(app)
-
-# Setup Login Manager
-login_manager = LoginManager()
-login_manager.login_view = 'auth.login'
-login_manager.init_app(app)
-
-# User loader function
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
 # Register blueprints
 app.register_blueprint(auth)
@@ -51,6 +38,7 @@ app.register_blueprint(main)
 app.register_blueprint(trivia)
 app.register_blueprint(admin)
 app.register_blueprint(higher_lower_game)
+app.register_blueprint(guess_player)
 
 # Create tables and admin user at app startup
 with app.app_context():
