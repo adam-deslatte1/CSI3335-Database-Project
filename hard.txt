@@ -1,0 +1,650 @@
+HARD_QUESTIONS = [
+    {
+        "template": "Which team had the lowest ERA but finished with a losing record in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND team_W < team_L AND team_ERA IS NOT NULL
+            ORDER BY team_ERA ASC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND team_W < team_L AND team_ERA IS NOT NULL
+              AND team_ERA > (
+                  SELECT MIN(team_ERA) FROM teams WHERE yearID = {year} AND team_W < team_L
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which team gave up the most runs but still made the playoffs in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND (DivWin = 'Y' OR WCWin = 'Y' OR LgWin = 'Y')
+            ORDER BY team_RA DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND (DivWin = 'Y' OR WCWin = 'Y' OR LgWin = 'Y')
+              AND team_RA < (
+                  SELECT MAX(team_RA) FROM teams
+                  WHERE yearID = {year}
+                    AND (DivWin = 'Y' OR WCWin = 'Y' OR LgWin = 'Y')
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which team had the lowest batting average (H/AB) but still won the World Series in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND WSWin = 'Y' AND team_AB > 0
+            ORDER BY (team_H / team_AB) ASC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND WSWin = 'Y' AND team_AB > 0
+              AND (team_H / team_AB) > (
+                  SELECT MIN(team_H / team_AB) FROM teams
+                  WHERE yearID = {year} AND WSWin = 'Y' AND team_AB > 0
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which team had the highest win total and did not make the postseason in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND WCWin != 'Y' AND DivWin != 'Y' AND LgWin != 'Y'
+            ORDER BY team_W DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND WCWin != 'Y' AND DivWin != 'Y' AND LgWin != 'Y'
+              AND team_W < (
+                  SELECT MAX(team_W) FROM teams
+                  WHERE yearID = {year}
+                    AND WCWin != 'Y' AND DivWin != 'Y' AND LgWin != 'Y'
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which team had the most home runs but failed to make the World Series in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND LgWin != 'Y' AND team_HR IS NOT NULL
+            ORDER BY team_HR DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND LgWin != 'Y' AND team_HR IS NOT NULL
+              AND team_HR < (
+                  SELECT MAX(team_HR) FROM teams WHERE yearID = {year} AND LgWin != 'Y'
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which team had the lowest winning percentage but still won their division in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND DivWin = 'Y' AND team_G > 0
+            ORDER BY (team_W / team_G) ASC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND DivWin = 'Y' AND team_G > 0
+              AND (team_W / team_G) > (
+                  SELECT MIN(team_W / team_G) FROM teams
+                  WHERE yearID = {year} AND DivWin = 'Y' AND team_G > 0
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which team had the most losses and still won the Wild Card in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND WCWin = 'Y'
+            ORDER BY team_L DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND WCWin = 'Y'
+              AND team_L < (
+                  SELECT MAX(team_L) FROM teams WHERE yearID = {year} AND WCWin = 'Y'
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which team had the highest team ERA and still made it to the League Championship?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND LgWin = 'Y'
+            ORDER BY team_ERA DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND LgWin = 'Y'
+              AND team_ERA < (
+                  SELECT MAX(team_ERA) FROM teams WHERE yearID = {year} AND LgWin = 'Y'
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which team led the league in errors but still had a winning record in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND team_W > team_L
+            ORDER BY team_E DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND team_W > team_L
+              AND team_E < (
+                  SELECT MAX(team_E) FROM teams WHERE yearID = {year} AND team_W > team_L
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which player hit the most home runs in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year}
+            ORDER BY HR DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year} AND HR < (
+                SELECT MAX(HR) FROM batting WHERE yearID = {year}
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which player had the highest batting average in {year} (min 400 AB)?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year} AND AB >= 400
+            ORDER BY (H / AB) DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year} AND AB >= 400
+              AND (H / AB) < (
+                  SELECT MAX(H / AB) FROM batting WHERE yearID = {year} AND AB >= 400
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which pitcher had the most strikeouts in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM pitching
+            JOIN people ON pitching.playerID = people.playerID
+            WHERE yearID = {year}
+            ORDER BY SO DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM pitching
+            JOIN people ON pitching.playerID = people.playerID
+            WHERE yearID = {year} AND SO < (
+                SELECT MAX(SO) FROM pitching WHERE yearID = {year}
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which player had the most stolen bases in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year}
+            ORDER BY SB DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year} AND SB < (
+                SELECT MAX(SB) FROM batting WHERE yearID = {year}
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which pitcher had the lowest ERA in {year} (min 100 IP)?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM pitching
+            JOIN people ON pitching.playerID = people.playerID
+            WHERE yearID = {year} AND IPouts >= 300
+            ORDER BY ERA ASC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM pitching
+            JOIN people ON pitching.playerID = people.playerID
+            WHERE yearID = {year} AND IPouts >= 300 AND ERA > (
+                SELECT MIN(ERA) FROM pitching WHERE yearID = {year} AND IPouts >= 300
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which player had the most RBIs in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year}
+            ORDER BY RBI DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year} AND RBI < (
+                SELECT MAX(RBI) FROM batting WHERE yearID = {year}
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which player drew the most walks in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year}
+            ORDER BY BB DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year} AND BB < (
+                SELECT MAX(BB) FROM batting WHERE yearID = {year}
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which pitcher had the most shutouts in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM pitching
+            JOIN people ON pitching.playerID = people.playerID
+            WHERE yearID = {year}
+            ORDER BY SHO DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM pitching
+            JOIN people ON pitching.playerID = people.playerID
+            WHERE yearID = {year} AND SHO < (
+                SELECT MAX(SHO) FROM pitching WHERE yearID = {year}
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which player led the league in strikeouts at the plate in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year}
+            ORDER BY SO DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year} AND SO < (
+                SELECT MAX(SO) FROM batting WHERE yearID = {year}
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which player had the most sacrifice flies in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year}
+            ORDER BY SF DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM batting
+            JOIN people ON batting.playerID = people.playerID
+            WHERE yearID = {year} AND SF < (
+                SELECT MAX(SF) FROM batting WHERE yearID = {year}
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which of these four teams had the highest ERA in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND team_ERA IS NOT NULL
+            ORDER BY RAND()
+            LIMIT 4
+''',
+        "followup_template": "\n            SELECT team_name FROM teams\n            WHERE yearID = {year}\n              AND team_name IN ({selected_names})\n            ORDER BY team_ERA DESC\n            LIMIT 1\n        ",
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND team_name IN ({selected_names})
+              AND team_ERA < (
+                  SELECT MAX(team_ERA) FROM teams
+                  WHERE yearID = {year}
+                    AND team_name IN ({selected_names})
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which of these four players hit the fewest home runs in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT playerID FROM (
+                SELECT playerID, SUM(b_HR) AS total_HR
+                FROM batting
+                WHERE yearID = {year}
+                GROUP BY playerID
+                HAVING total_HR IS NOT NULL
+                ORDER BY RAND()
+                LIMIT 4
+            ) AS random_players
+''',
+        "followup_template": "\n            SELECT playerID FROM (\n                SELECT playerID, SUM(b_HR) AS total_HR\n                FROM batting\n                WHERE yearID = {year}\n                GROUP BY playerID\n                HAVING playerID IN ({selected_ids})\n            ) AS candidates\n            ORDER BY total_HR ASC\n            LIMIT 1\n        ",
+        "wrong_sql_template": '''
+SELECT playerID FROM (
+                SELECT playerID, SUM(b_HR) AS total_HR
+                FROM batting
+                WHERE yearID = {year}
+                GROUP BY playerID
+                HAVING playerID IN ({selected_ids}) AND total_HR > (
+                    SELECT MIN(total_HR)
+                    FROM (
+                        SELECT playerID, SUM(b_HR) AS total_HR
+                        FROM batting
+                        WHERE yearID = {year}
+                        GROUP BY playerID
+                        HAVING playerID IN ({selected_ids})
+                    ) AS nested
+                )
+            ) AS wrongs
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which of these four teams gave up the most runs in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND team_RA IS NOT NULL
+            ORDER BY RAND()
+            LIMIT 4
+''',
+        "followup_template": "\n            SELECT team_name FROM teams\n            WHERE yearID = {year}\n              AND team_name IN ({selected_names})\n            ORDER BY team_RA DESC\n            LIMIT 1\n        ",
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND team_name IN ({selected_names})
+              AND team_RA < (
+                  SELECT MAX(team_RA) FROM teams
+                  WHERE yearID = {year}
+                    AND team_name IN ({selected_names})
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which of these four players had the most strikeouts as a batter in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT playerID FROM (
+                SELECT playerID, SUM(b_SO) AS total_SO
+                FROM batting
+                WHERE yearID = {year}
+                GROUP BY playerID
+                HAVING total_SO IS NOT NULL
+                ORDER BY RAND()
+                LIMIT 4
+            ) AS random_players
+''',
+        "followup_template": "\n            SELECT playerID FROM (\n                SELECT playerID, SUM(b_SO) AS total_SO\n                FROM batting\n                WHERE yearID = {year}\n                GROUP BY playerID\n                HAVING playerID IN ({selected_ids})\n            ) AS candidates\n            ORDER BY total_SO DESC\n            LIMIT 1\n        ",
+        "wrong_sql_template": '''
+SELECT playerID FROM (
+                SELECT playerID, SUM(b_SO) AS total_SO
+                FROM batting
+                WHERE yearID = {year}
+                GROUP BY playerID
+                HAVING playerID IN ({selected_ids}) AND total_SO < (
+                    SELECT MAX(total_SO)
+                    FROM (
+                        SELECT playerID, SUM(b_SO) AS total_SO
+                        FROM batting
+                        WHERE yearID = {year}
+                        GROUP BY playerID
+                        HAVING playerID IN ({selected_ids})
+                    ) AS nested
+                )
+            ) AS wrongs
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which of these four teams hit the fewest home runs in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND team_HR IS NOT NULL
+            ORDER BY RAND()
+            LIMIT 4
+''',
+        "followup_template": "\n            SELECT team_name FROM teams\n            WHERE yearID = {year}\n              AND team_name IN ({selected_names})\n            ORDER BY team_HR ASC\n            LIMIT 1\n        ",
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND team_name IN ({selected_names})
+              AND team_HR > (
+                  SELECT MIN(team_HR) FROM teams
+                  WHERE yearID = {year}
+                    AND team_name IN ({selected_names})
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which of these four players had the most stolen bases in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT playerID FROM (
+                SELECT playerID, SUM(b_SB) AS total_SB
+                FROM batting
+                WHERE yearID = {year}
+                GROUP BY playerID
+                HAVING total_SB IS NOT NULL
+                ORDER BY RAND()
+                LIMIT 4
+            ) AS random_players
+''',
+        "followup_template": "\n            SELECT playerID FROM (\n                SELECT playerID, SUM(b_SB) AS total_SB\n                FROM batting\n                WHERE yearID = {year}\n                GROUP BY playerID\n                HAVING playerID IN ({selected_ids})\n            ) AS candidates\n            ORDER BY total_SB DESC\n            LIMIT 1\n        ",
+        "wrong_sql_template": '''
+SELECT playerID FROM (
+                SELECT playerID, SUM(b_SB) AS total_SB
+                FROM batting
+                WHERE yearID = {year}
+                GROUP BY playerID
+                HAVING playerID IN ({selected_ids}) AND total_SB < (
+                    SELECT MAX(total_SB)
+                    FROM (
+                        SELECT playerID, SUM(b_SB) AS total_SB
+                        FROM batting
+                        WHERE yearID = {year}
+                        GROUP BY playerID
+                        HAVING playerID IN ({selected_ids})
+                    ) AS nested
+                )
+            ) AS wrongs
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which of these four teams had the highest fielding percentage in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND team_FP IS NOT NULL
+            ORDER BY RAND()
+            LIMIT 4
+''',
+        "followup_template": "\n            SELECT team_name FROM teams\n            WHERE yearID = {year}\n              AND team_name IN ({selected_names})\n            ORDER BY team_FP DESC\n            LIMIT 1\n        ",
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND team_name IN ({selected_names})
+              AND team_FP < (
+                  SELECT MAX(team_FP) FROM teams
+                  WHERE yearID = {year}
+                    AND team_name IN ({selected_names})
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+    {
+        "template": "Which of these four players was hit by the most pitches in {year}?",
+        "fetchers": ["fetch_year"],
+        "sql_template": '''
+SELECT playerID FROM (
+                SELECT playerID, SUM(b_HBP) AS total_HBP
+                FROM batting
+                WHERE yearID = {year}
+                GROUP BY playerID
+                HAVING total_HBP IS NOT NULL
+                ORDER BY RAND()
+                LIMIT 4
+            ) AS random_players
+''',
+        "followup_template": "\n            SELECT playerID FROM (\n                SELECT playerID, SUM(b_HBP) AS total_HBP\n                FROM batting\n                WHERE yearID = {year}\n                GROUP BY playerID\n                HAVING playerID IN ({selected_ids})\n            ) AS candidates\n            ORDER BY total_HBP DESC\n            LIMIT 1\n        ",
+        "wrong_sql_template": '''
+SELECT playerID FROM (
+                SELECT playerID, SUM(b_HBP) AS total_HBP
+                FROM batting
+                WHERE yearID = {year}
+                GROUP BY playerID
+                HAVING playerID IN ({selected_ids}) AND total_HBP < (
+                    SELECT MAX(total_HBP)
+                    FROM (
+                        SELECT playerID, SUM(b_HBP) AS total_HBP
+                        FROM batting
+                        WHERE yearID = {year}
+                        GROUP BY playerID
+                        HAVING playerID IN ({selected_ids})
+                    ) AS nested
+                )
+            ) AS wrongs
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "hard",
+    },
+]

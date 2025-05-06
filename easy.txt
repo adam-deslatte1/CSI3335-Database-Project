@@ -1,0 +1,387 @@
+EASY_QUESTIONS = [
+    {
+        "template": "What is the last name of the Hall of Fame player named {nameFirst}?",
+        "fetchers": ["fetch_hof_first_name"],
+        "sql_template": '''
+SELECT nameLast FROM people
+            WHERE nameFirst = '{nameFirst}'
+              AND playerID IN (
+                  SELECT playerID FROM halloffame WHERE inducted = 'Y'
+              )
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT nameLast FROM people
+            WHERE nameFirst != '{nameFirst}'
+              AND playerID IN (
+                  SELECT playerID FROM halloffame WHERE inducted = 'Y'
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "What is the first name of the Hall of Fame player with last name {nameLast}?",
+        "fetchers": ["fetch_hof_last_name"],
+        "sql_template": '''
+SELECT nameFirst FROM people
+            WHERE nameLast = '{nameLast}'
+              AND playerID IN (
+                  SELECT playerID FROM halloffame WHERE inducted = 'Y'
+              )
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT nameFirst FROM people
+            WHERE nameLast != '{nameLast}'
+              AND playerID IN (
+                  SELECT playerID FROM halloffame WHERE inducted = 'Y'
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which Hall of Fame player shares a last name with {nameLast}?",
+        "fetchers": ["fetch_hof_last_name"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM people
+            WHERE nameLast = '{nameLast}'
+              AND playerID IN (SELECT playerID FROM halloffame WHERE inducted = 'Y')
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT CONCAT(nameFirst, ' ', nameLast) FROM people
+            WHERE nameLast != '{nameLast}'
+              AND playerID IN (SELECT playerID FROM halloffame WHERE inducted = 'Y')
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which Hall of Fame player was born in the same state as {nameFirst} {nameLast}?",
+        "fetchers": ["fetch_full_hof_name"],
+        "sql_template": '''
+SELECT CONCAT(nameFirst, ' ', nameLast) FROM people
+            WHERE birth_state = (
+                SELECT birth_state FROM people
+                WHERE nameFirst = '{nameFirst}' AND nameLast = '{nameLast}'
+            )
+              AND playerID IN (SELECT playerID FROM halloffame WHERE inducted = 'Y')
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT CONCAT(nameFirst, ' ', nameLast) FROM people
+            WHERE birth_state NOT IN (
+                SELECT birth_state FROM people
+                WHERE nameFirst = '{nameFirst}' AND nameLast = '{nameLast}'
+            )
+              AND playerID IN (SELECT playerID FROM halloffame WHERE inducted = 'Y')
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which of these first names belongs to a Hall of Fame player?",
+        "fetchers": ["fetch_hof_first_name"],
+        "sql_template": '''
+SELECT nameFirst FROM people
+            WHERE nameFirst = '{nameFirst}'
+              AND playerID IN (SELECT playerID FROM halloffame WHERE inducted = 'Y')
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT nameFirst FROM people
+            WHERE nameFirst != '{nameFirst}'
+              AND playerID IN (SELECT playerID FROM halloffame WHERE inducted = 'Y')
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which of these last names belongs to a Hall of Fame player?",
+        "fetchers": ["fetch_hof_last_name"],
+        "sql_template": '''
+SELECT nameLast FROM people
+            WHERE nameLast = '{nameLast}'
+              AND playerID IN (SELECT playerID FROM halloffame WHERE inducted = 'Y')
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT nameLast FROM people
+            WHERE nameLast != '{nameLast}'
+              AND playerID IN (SELECT playerID FROM halloffame WHERE inducted = 'Y')
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team has the most World Series wins of all time?",
+        "fetchers": [],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'Y'
+            GROUP BY team_name
+            ORDER BY COUNT(*) DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT team_name FROM teams
+            WHERE team_name NOT IN (
+                SELECT team_name FROM teams
+                WHERE WSWin = 'Y'
+                GROUP BY team_name
+                ORDER BY COUNT(*) DESC
+                LIMIT 1
+            )
+            AND team_name IS NOT NULL
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team has the fewest World Series wins (among teams that have won)?",
+        "fetchers": [],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'Y'
+            GROUP BY team_name
+            ORDER BY COUNT(*) ASC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'Y'
+            GROUP BY team_name
+            HAVING COUNT(*) > 1
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team won the World Series most recently?",
+        "fetchers": [],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'Y'
+            ORDER BY yearID DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT team_name FROM teams
+            WHERE WSWin = 'Y'
+              AND yearID < (SELECT MAX(yearID) FROM teams WHERE WSWin = 'Y')
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team has won the most World Series titles since 2005?",
+        "fetchers": [],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'Y' AND yearID >= 2005
+            GROUP BY team_name
+            ORDER BY COUNT(*) DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'Y' AND yearID >= 2005
+            GROUP BY team_name
+            HAVING COUNT(*) < (
+                SELECT COUNT(*) FROM teams
+                WHERE WSWin = 'Y' AND yearID >= 2005
+                GROUP BY team_name
+                ORDER BY COUNT(*) DESC
+                LIMIT 1
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team hasn't won a World Series in the past 20 years?",
+        "fetchers": [],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE team_name NOT IN (
+                SELECT DISTINCT team_name FROM teams
+                WHERE WSWin = 'Y' AND yearID >= YEAR(CURDATE()) - 20
+            )
+            AND team_name IS NOT NULL
+            GROUP BY team_name
+            ORDER BY RAND()
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE team_name IN (
+                SELECT DISTINCT team_name FROM teams
+                WHERE WSWin = 'Y' AND yearID >= YEAR(CURDATE()) - 20
+            )
+            GROUP BY team_name
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team won the World Series in {year}?",
+        "fetchers": ["fetch_year_with_ws"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'Y' AND yearID = {year}
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year}
+              AND WSWin != 'Y'
+              AND team_name IS NOT NULL
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team has the most World Series **appearances** since 1990?",
+        "fetchers": [],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID >= 1990 AND WSWin = 'Y'
+            GROUP BY team_name
+            ORDER BY COUNT(*) DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID >= 1990 AND WSWin = 'Y'
+            GROUP BY team_name
+            HAVING COUNT(*) < (
+                SELECT COUNT(*) FROM teams
+                WHERE WSWin = 'Y' AND yearID >= 1990
+                GROUP BY team_name
+                ORDER BY COUNT(*) DESC
+                LIMIT 1
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which of these teams has **never** won a World Series?",
+        "fetchers": [],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE team_name NOT IN (
+                SELECT DISTINCT team_name FROM teams WHERE WSWin = 'Y'
+            )
+            AND team_name IS NOT NULL
+            GROUP BY team_name
+            ORDER BY RAND()
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT team_name FROM teams
+            WHERE WSWin = 'Y'
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team has the most World Series **losses** on record?",
+        "fetchers": [],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'N'
+            GROUP BY team_name
+            ORDER BY COUNT(*) DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'N'
+            GROUP BY team_name
+            HAVING COUNT(*) < (
+                SELECT COUNT(*) FROM teams
+                WHERE WSWin = 'N'
+                GROUP BY team_name
+                ORDER BY COUNT(*) DESC
+                LIMIT 1
+            )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team has only won a single World Series title?",
+        "fetchers": [],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'Y'
+            GROUP BY team_name
+            HAVING COUNT(*) = 1
+            ORDER BY RAND()
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE WSWin = 'Y'
+            GROUP BY team_name
+            HAVING COUNT(*) > 1
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which park did the {team_name} play in during {year}?",
+        "fetchers": ["fetch_team_name", "fetch_year_recent"],
+        "sql_template": '''
+SELECT park_name FROM teams
+            WHERE team_name = '{team_name}' AND yearID = {year} AND yearID >= 2005
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT DISTINCT park_name FROM teams
+            WHERE team_name != '{team_name}' AND park_name IS NOT NULL AND yearID = {year} AND yearID >= 2005
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+    {
+        "template": "Which team hit the most home runs in {year}?",
+        "fetchers": ["fetch_year_recent"],
+        "sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND yearID >= 2005
+            ORDER BY team_HR DESC
+            LIMIT 1
+''',
+        "wrong_sql_template": '''
+SELECT team_name FROM teams
+            WHERE yearID = {year} AND yearID >= 2005
+              AND team_HR < (
+                  SELECT MAX(team_HR) FROM teams WHERE yearID = {year} AND yearID >= 2005
+              )
+            ORDER BY RAND()
+            LIMIT 3
+''',
+        "difficulty": "easy",
+    },
+]
