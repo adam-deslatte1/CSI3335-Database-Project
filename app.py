@@ -6,11 +6,25 @@ from routes.auth import auth
 from routes.main import main
 from routes.trivia import trivia
 from routes.admin import admin
+from routes.higher_lower import game as higher_lower_game
+
 from flask_wtf import CSRFProtect
 from flask_login import LoginManager
 
+
+
+
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # Configure SQLAlchemy for MariaDB with PyMySQL
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}"
@@ -35,6 +49,11 @@ app.register_blueprint(auth)
 app.register_blueprint(main)
 app.register_blueprint(trivia)
 app.register_blueprint(admin)
+app.register_blueprint(higher_lower_game)
+
+db.init_app(app)
+
+csrf = CSRFProtect(app)
 
 # Create tables and admin user at app startup
 with app.app_context():

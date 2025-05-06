@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
+from flask_login import UserMixin
 
 db = SQLAlchemy()
 
@@ -124,3 +125,10 @@ class UserLifeline(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 # Remove Team, Player, Division, and DivisionHistory models as we'll use Lahman tables instead
+
+class HigherLowerLeaderboard(db.Model):
+    __tablename__ = 'higher_lower_leaderboard'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('app_users.id'))
+    streak = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

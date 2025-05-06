@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="hl-container" style="max-width: 600px; margin: 40px auto; padding: 32px; background: #fff; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.08);">
+    <h2 class="text-center mb-4">Higher or Lower Leaderboard</h2>
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>User</th>
+                <th>Streak</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in top10 %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ entry.user_id }}</td>
+                <td>{{ entry.streak }}</td>
+                <td>{{ entry.created_at.strftime('%Y-%m-%d') if entry.created_at else '' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="text-center mt-4">
+        <a href="{{ url_for('higher_lower.higher_lower') }}" class="btn btn-lg btn-primary">Back to Game</a>
+    </div>
+</div>
+{% endblock %} 
