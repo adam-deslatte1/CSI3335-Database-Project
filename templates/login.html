@@ -1,18 +1,22 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h1>Login</h1>
-<form method="POST">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div>
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required>
+<div style="display: flex; justify-content: center; align-items: center; min-height: 70vh;">
+    <div style="background: #232527; color: #fff; padding: 40px 36px; border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.10); min-width: 340px;">
+        <h1 style="text-align:center; color:#fff; margin-bottom: 28px;">Login</h1>
+        <form method="POST" style="display: flex; flex-direction: column; gap: 18px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                <label for="username" style="margin-bottom: 6px; color:#fff;">Username:</label>
+                <input type="text" id="username" name="username" required style="padding: 10px; border-radius: 8px; border: none; width: 100%; background: #181a1b; color: #fff;">
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                <label for="password" style="margin-bottom: 6px; color:#fff;">Password:</label>
+                <input type="password" id="password" name="password" required style="padding: 10px; border-radius: 8px; border: none; width: 100%; background: #181a1b; color: #fff;">
+            </div>
+            <button type="submit" style="background: #28a745; color: #fff; font-size: 1.1em; font-weight: bold; border: none; border-radius: 8px; padding: 12px 0; margin-top: 10px; transition: background 0.2s; cursor: pointer;">Login</button>
+        </form>
+        <p style="margin-top: 18px; text-align:center; color:#fff;">Don't have an account? <a href="{{ url_for('auth.register') }}" style="color:#7CFC98; text-decoration: underline;">Register here</a></p>
     </div>
-    <div>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required>
-    </div>
-    <button type="submit">Login</button>
-</form>
-<p>Don't have an account? <a href="{{ url_for('auth.register') }}">Register here</a></p>
+</div>
 {% endblock %}

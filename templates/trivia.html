@@ -24,62 +24,65 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <!-- Prize Money Display -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">Prize Money: ${{ current_prize|format_number }}</h3>
-                </div>
+            <div style="text-align:center; margin-bottom: 24px;">
+                <span style="background:#232527; color:#ffc107; font-size:1.3em; font-weight:bold; padding:10px 32px; border-radius:12px; display:inline-block; box-shadow:0 2px 16px rgba(0,0,0,0.10);">
+                    Prize Money: ${{ current_prize|format_number }}
+                </span>
             </div>
 
             <!-- Question Card -->
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title question-centered">{{ question_text }}</h4>
-                    <form id="triviaForm" class="mt-4">
-                        <input type="hidden" name="correct_answer" value="{{ correct_answer }}">
-                        <div class="answer-grid">
-                        {% for option in options %}
-                            <button type="button" class="answer-btn" data-value="{{ option }}" id="option{{ loop.index }}">{{ option }}</button>
-                        {% endfor %}
-                        </div>
-                        <input type="hidden" name="answer" id="selectedAnswer">
-                        <div class="d-flex justify-content-center mt-4">
-                            <button type="submit" class="lockin-btn" id="submitBtn" disabled>Lock In Answer</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- Result Display -->
-            <div id="resultOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:9999; align-items:center; justify-content:center; flex-direction:column;">
-                <div class="card text-center" style="max-width: 400px; margin:auto;">
+            {% if not show_result %}
+                <div class="trivia-card">
                     <div class="card-body">
-                        <h2 id="resultHeading"></h2>
-                        <p class="result-text"></p>
-                        <p class="mb-0">Current Prize Money: $<span id="currentPrize">{{ current_prize|format_number }}</span></p>
-                        <div id="nextQuestionBtnContainer" class="mt-4" style="display:none;">
-                            <button class="btn btn-success" id="nextQuestionBtn">Next Question</button>
+                        <h4 class="card-title question-centered">{{ question_text }}</h4>
+                        {% if phone_friend_suggestion %}
+                        <div class="trivia-message" style="color:#ffc107; margin-bottom: 1rem;">
+                            {{ phone_friend_suggestion }}
                         </div>
-                        <div id="playAgainBtnContainer" class="mt-4" style="display:none;">
-                            <button class="btn btn-danger" id="playAgainBtn">Play Again</button>
-                        </div>
+                        {% endif %}
+                        <form id="triviaForm" class="mt-4" method="post" action="{{ url_for('trivia.play_trivia') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="correct_answer" value="{{ correct_answer }}">
+                            <div style="margin-bottom: 1rem; text-align:center;">
+                                <button type="submit" name="lifeline" value="5050" id="fiftyFifty" class="trivia-btn trivia-btn-success" {% if '5050' in used_lifelines %}disabled{% endif %} style="margin-right: 10px;">50:50</button>
+                                <button type="submit" name="lifeline" value="phone" id="phoneFriend" class="trivia-btn trivia-btn-success" {% if 'phone' in used_lifelines %}disabled{% endif %} style="margin-left: 10px;">Phone a Friend</button>
+                            </div>
+                            <div class="answer-grid">
+                            {% for option in options %}
+                                {% if not fifty_fifty_eliminated or option not in fifty_fifty_eliminated %}
+                                    <button type="submit" name="answer" value="{{ option }}" class="answer-btn">{{ option }}</button>
+                                {% endif %}
+                            {% endfor %}
+                            </div>
+                        </form>
                     </div>
                 </div>
-            </div>
-
-            <!-- Lifeline Results -->
-            <div id="lifelineResult" class="modal fade" tabindex="-1">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Lifeline Result</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p id="lifelineText"></p>
-                        </div>
-                    </div>
+            {% else %}
+                <!-- Show result message and next/play again button -->
+                <div class="trivia-card">
+                    {% if is_correct %}
+                        <div class="trivia-message" style="color:#28a745;">Correct!</div>
+                        <p>You've won ${{ current_prize|format_number }}!</p>
+                        {% if not game_over %}
+                            <form method="get" action="{{ url_for('trivia.play_trivia') }}">
+                                <button class="trivia-btn trivia-btn-success">Next Question</button>
+                            </form>
+                        {% else %}
+                            <div class="trivia-message" style="color:#ffc107;">Congratulations! You finished the game!</div>
+                            <form method="get" action="{{ url_for('trivia.play_trivia') }}">
+                                <button class="trivia-btn trivia-btn-danger">Play Again</button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <div class="trivia-message" style="color:#dc3545;">Incorrect!</div>
+                        <p>Game Over! The correct answer was "{{ correct_answer }}".<br>
+                        You walk away with ${{ current_prize|format_number }}</p>
+                        <form method="get" action="{{ url_for('trivia.play_trivia') }}">
+                            <button class="trivia-btn trivia-btn-danger">Play Again</button>
+                        </form>
+                    {% endif %}
                 </div>
-            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -163,20 +166,123 @@
     background: #2e1e1e;
     color: #fff;
 }
+.trivia-message {
+    text-align: center;
+    font-size: 1.2em;
+    margin-top: 18px;
+    font-weight: bold;
+}
+.trivia-btn {
+    min-width: 120px;
+    width: auto;
+    font-size: 1.2em;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    padding: 14px 36px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    text-align: center;
+    display: inline-block;
+    margin: 10px 0;
+}
+.trivia-btn-success {
+    background: #28a745;
+    color: #fff;
+}
+.trivia-btn-success:hover {
+    background: #218838;
+}
+.trivia-btn-danger {
+    background: #dc3545;
+    color: #fff;
+}
+.trivia-btn-danger:hover {
+    background: #b71c2b;
+}
+.trivia-card {
+    background: #181a1b;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    padding: 32px 36px;
+    min-width: 220px;
+    min-height: 180px;
+    text-align: center;
+    color: #fff;
+    margin: 40px auto;
+    max-width: 400px;
+}
+.ladder-container {
+    margin-bottom: 32px;
+    text-align: center;
+}
+.ladder-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+    display: inline-block;
+    background: #232527;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    min-width: 320px;
+    max-width: 400px;
+}
+.ladder-item {
+    padding: 10px 32px;
+    font-size: 1.1em;
+    color: #eee;
+    background: transparent;
+    border-radius: 8px;
+    margin: 2px 0;
+    transition: background 0.2s, color 0.2s;
+    text-align: left;
+    white-space: nowrap;
+}
+.ladder-item.current {
+    font-weight: bold;
+    background: #333b3d;
+    color: #fff;
+    border-left: 6px solid #28a745;
+}
+.ladder-item.current.correct {
+    background: #28a745;
+    color: #fff;
+    border-left: 6px solid #28a745;
+}
+.ladder-item.current.incorrect {
+    background: #dc3545;
+    color: #fff;
+    border-left: 6px solid #dc3545;
+}
+.ladder-item.safe {
+    background: #232527;
+    color: #ffc107;
+    border-left: 6px solid #ffc107;
+}
+.trivia-btn[disabled], .trivia-btn:disabled {
+    background: #444 !important;
+    color: #bbb !important;
+    cursor: not-allowed !important;
+    border: none !important;
+    opacity: 0.7;
+}
 </style>
 
 <script>
 console.log('Trivia script loaded');
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded and parsed');
     // DEBUG: Log how many answer buttons are found
     const answerBtns = document.querySelectorAll('.answer-btn');
     const selectedAnswerInput = document.getElementById('selectedAnswer');
     const submitBtn = document.getElementById('submitBtn');
+    const triviaForm = document.getElementById('triviaForm');
     console.log('Found answer buttons:', answerBtns.length);
     console.log('selectedAnswerInput:', selectedAnswerInput);
     console.log('submitBtn:', submitBtn);
-    if (!selectedAnswerInput || !submitBtn) {
-        console.error('selectedAnswerInput or submitBtn not found!');
+    console.log('triviaForm:', triviaForm);
+    if (!selectedAnswerInput || !submitBtn || !triviaForm) {
+        console.error('selectedAnswerInput, submitBtn, or triviaForm not found!');
         return;
     }
     let selectedBtn = null;
@@ -220,24 +326,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Handle Phone a Friend lifeline
-    document.getElementById('phoneFriend').addEventListener('click', function() {
-        fetch('/trivia/phone-friend', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                question_id: document.querySelector('input[name="question_id"]').value
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            this.disabled = true;
-            showLifelineResult(`Your friend says: "${data.advice}"`);
-        });
-    });
-
     // Handle Ask the Audience lifeline
     document.getElementById('askAudience').addEventListener('click', function() {
         fetch('/trivia/ask-audience', {
@@ -276,16 +364,32 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Handle form submission
-    document.getElementById('triviaForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (!selectedAnswerInput.value) return;
+    triviaForm.addEventListener('submit', function(e) {
+        console.log('Form submit intercepted!');
+        e.preventDefault();  // Prevent default form submission
+        if (!selectedAnswerInput.value) {
+            console.warn('No answer selected, aborting submit.');
+            return;
+        }
+        console.log('Submitting form via fetch...');
         const formData = new FormData(this);
         fetch('/trivia/answer', {
             method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            },
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            console.log('Received response from /trivia/answer:', response);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
+            console.log('Parsed JSON:', data);
             showResult(data.correct, data.prize_money, data.correct_answer, selectedAnswerInput.value);
             // Update prize and inning highlight
             document.getElementById('currentPrize').textContent = formatNumber(data.prize_money);
@@ -296,6 +400,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     item.classList.add('current');
                 }
             });
+        })
+        .catch(error => {
+            console.error('Error during fetch or JSON parse:', error);
+            alert('An error occurred while submitting your answer. Please try again.');
         });
     });
 
@@ -343,8 +451,24 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/trivia';
     });
 
-    function showLifelineResult(text) {
-        const modal = new bootstrap.Modal(document.getElementById('lifelineResult'));
+    // Add class to current inning based on result
+    var ladderItems = document.querySelectorAll('.ladder-item');
+    var currentLevel = parseInt('{{ current_level|int }}');
+    var isCorrect = {{ 'true' if is_correct else 'false' }};
+    ladderItems.forEach(function(item, idx) {
+        item.classList.remove('correct', 'incorrect');
+        if (9 - idx === currentLevel) {
+            if (isCorrect) {
+                item.classList.add('correct');
+            } else {
+                item.classList.add('incorrect');
+            }
+        }
+    });
+
+    // Lifeline modal display function
+    window.showLifelineResult = function(text) {
+        var modal = new bootstrap.Modal(document.getElementById('lifelineResult'));
         document.getElementById('lifelineText').textContent = text;
         modal.show();
     }

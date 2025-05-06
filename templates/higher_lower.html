@@ -1,6 +1,41 @@
 {% extends 'base.html' %}
 {% block content %}
 <style>
+body {
+    background: #181a1b !important;
+    color: #f2f2f2 !important;
+}
+.hl-card, .hl-gameover-message {
+    background: #232527 !important;
+    color: #fff !important;
+}
+.hl-btn, .hl-btn-lg {
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+    transition: background 0.2s, color 0.2s;
+}
+.hl-btn.lower {
+    background: #dc3545;
+}
+.hl-btn.lower:hover {
+    background: #b71c2b;
+}
+.hl-btn.higher:hover, .hl-btn.hl-btn-success:hover {
+    background: #218838;
+}
+.hl-btn.hl-btn-outline {
+    background: transparent;
+    color: #007bff;
+    border: 2px solid #007bff;
+}
+.hl-btn.hl-btn-outline:hover {
+    background: #007bff;
+    color: #fff;
+}
 .hl-game-flex {
     display: flex;
     justify-content: center;
