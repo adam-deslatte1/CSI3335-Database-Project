@@ -166,30 +166,30 @@
 </style>
 
 <script>
+console.log('Trivia script loaded');
 document.addEventListener('DOMContentLoaded', function() {
     // DEBUG: Log how many answer buttons are found
     const answerBtns = document.querySelectorAll('.answer-btn');
-    console.log('Found answer buttons:', answerBtns.length);
     const selectedAnswerInput = document.getElementById('selectedAnswer');
     const submitBtn = document.getElementById('submitBtn');
+    console.log('Found answer buttons:', answerBtns.length);
     console.log('selectedAnswerInput:', selectedAnswerInput);
     console.log('submitBtn:', submitBtn);
-    let selectedBtn = null;
-
-    if (selectedAnswerInput && submitBtn) {
-        answerBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                answerBtns.forEach(b => b.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedAnswerInput.value = this.dataset.value;
-                submitBtn.disabled = false;
-                selectedBtn = this;
-                console.log('Selected:', this.dataset.value);
-            });
-        });
-    } else {
+    if (!selectedAnswerInput || !submitBtn) {
         console.error('selectedAnswerInput or submitBtn not found!');
+        return;
     }
+    let selectedBtn = null;
+    answerBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            answerBtns.forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedAnswerInput.value = this.dataset.value;
+            submitBtn.disabled = false;
+            selectedBtn = this;
+            console.log('Selected:', this.dataset.value);
+        });
+    });
 
     // Format number with commas
     function formatNumber(num) {
@@ -307,7 +307,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const nextBtnContainer = document.getElementById('nextQuestionBtnContainer');
         const playAgainBtnContainer = document.getElementById('playAgainBtnContainer');
         overlay.style.display = 'flex';
-        document.getElementById('triviaForm').style.display = 'none';
+        // Do NOT remove answer buttons from DOM so highlight works
+        // document.getElementById('triviaForm').style.display = 'none';
         // Highlight correct and incorrect answers
         answerBtns.forEach(btn => {
             btn.classList.remove('selected');
@@ -317,6 +318,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!correct && btn.dataset.value === userAnswer && userAnswer !== correctAnswer) {
                 btn.classList.add('incorrect');
             }
+            // Disable all answer buttons after submission
+            btn.disabled = true;
         });
         if (correct) {
             heading.textContent = 'Correct!';
@@ -333,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     document.getElementById('nextQuestionBtn').addEventListener('click', function() {
-        window.location.reload();
+        window.location.href = '/trivia';
     });
     document.getElementById('playAgainBtn').addEventListener('click', function() {
         // Optionally, reset session state via an endpoint

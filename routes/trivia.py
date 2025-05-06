@@ -35,6 +35,12 @@ def play_trivia():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
 
+    # Initialize/reset game state if starting new game
+    if 'current_level' not in session or session.get('game_over'):
+        session['current_level'] = 1
+        session['current_prize'] = 0
+        session['game_over'] = False
+
     current_level = session.get('current_level', 1)
     if current_level <= 4:
         difficulty = 'easy'
@@ -58,18 +64,6 @@ def play_trivia():
     if not fetchers:
         flash('No fetcher defined for this question.', 'error')
         return redirect(url_for('main.dashboard'))
-    fetcher_name = fetchers[0]  # Assuming only one fetcher per question for now
-    fetcher_func = FETCHER_MAP.get(fetcher_name)
-
-    if fetcher_func is None:
-        flash(f'Unknown fetcher: {fetcher_name}', 'error')
-        return redirect(url_for('main.dashboard'))
-
-    # Pass difficulty if needed
-    if fetcher_name in FETCHERS_WITH_DIFFICULTY:
-        fetch_value = fetcher_func(question.difficulty)
-    else:
-        fetch_value = fetcher_func()
 
     # --- Robustly extract all template variables ---
     def extract_vars(s):
@@ -80,30 +74,60 @@ def play_trivia():
     needed_vars |= extract_vars(question.wrong_sql_template)
 
     template_vars = {}
-    # Try to fill all needed vars from fetch_value
-    for var in needed_vars:
-        if isinstance(fetch_value, dict) and var in fetch_value:
-            template_vars[var] = fetch_value[var]
-        elif isinstance(fetch_value, tuple):
-            # Common tuple order: (nameFirst, nameLast)
-            if var == 'nameFirst':
-                template_vars[var] = fetch_value[0]
-            elif var == 'nameLast':
-                template_vars[var] = fetch_value[1]
+    # Support multiple fetchers and assign to correct variables
+    for fetcher_name in fetchers:
+        fetcher_func = FETCHER_MAP.get(fetcher_name)
+        if fetcher_func is None:
+            flash(f'Unknown fetcher: {fetcher_name}', 'error')
+            return redirect(url_for('main.dashboard'))
+        # Pass difficulty if needed
+        if fetcher_name in FETCHERS_WITH_DIFFICULTY:
+            fetch_value = fetcher_func(question.difficulty)
         else:
-            template_vars[var] = fetch_value
+            fetch_value = fetcher_func()
+        # Assign fetch_value to the correct variable(s)
+        # Map fetcher_name to variable name(s)
+        if fetcher_name == 'fetch_team_name':
+            template_vars['team_name'] = fetch_value
+        elif fetcher_name == 'fetch_year' or fetcher_name == 'fetch_year_with_ws' or fetcher_name == 'fetch_year_recent':
+            template_vars['year'] = fetch_value
+        elif fetcher_name == 'fetch_hof_first_name':
+            template_vars['nameFirst'] = fetch_value
+        elif fetcher_name == 'fetch_hof_last_name':
+            template_vars['nameLast'] = fetch_value
+        elif fetcher_name == 'fetch_full_hof_name':
+            if isinstance(fetch_value, tuple):
+                template_vars['nameFirst'] = fetch_value[0]
+                template_vars['nameLast'] = fetch_value[1]
+        elif fetcher_name == 'fetch_team_city':
+            template_vars['city'] = fetch_value
+        elif fetcher_name == 'fetch_team_state' or fetcher_name == 'fetch_multi_team_state':
+            template_vars['state'] = fetch_value
+        elif fetcher_name == 'fetch_rank':
+            template_vars['rank'] = fetch_value
+        else:
+            # Fallback: assign to variable named after fetcher
+            key = fetcher_name.replace('fetch_', '')
+            template_vars[key] = fetch_value
+
     # If any needed var is still missing, skip this question
     missing_vars = [v for v in needed_vars if v not in template_vars or template_vars[v] is None]
     if missing_vars:
         flash(f'Could not generate question due to missing variables: {missing_vars}', 'error')
         return redirect(url_for('main.dashboard'))
 
+    # Escape all string values in template_vars for SQL
+    def sql_escape(val):
+        if isinstance(val, str):
+            return val.replace("'", "''")
+        return val
+    escaped_template_vars = {k: sql_escape(v) for k, v in template_vars.items()}
+
     question_text = question.template.format(**template_vars)
-    correct_sql = question.sql_template.format(**template_vars)
-    wrong_sql = question.wrong_sql_template.format(**template_vars)
+    correct_sql = question.sql_template.format(**escaped_template_vars)
+    wrong_sql = question.wrong_sql_template.format(**escaped_template_vars)
 
     print("Difficulty:", difficulty)
-    print("Fetcher value:", fetch_value)
     print("Correct SQL:", correct_sql)
 
     correct_answers = run_sql(correct_sql)

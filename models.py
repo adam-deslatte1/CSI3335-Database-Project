@@ -103,7 +103,7 @@ class UserTriviaHistory(db.Model):
     answered_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class TriviaQuestion(db.Model):
-    __tablename__ = 'trivia_questions'
+    __tablename__ = 'app_trivia_questions'
     id = db.Column(db.Integer, primary_key=True)
     difficulty = db.Column(db.String(20))
     template = db.Column(db.Text)

@@ -69,7 +69,7 @@ SELECT DISTINCT CONCAT(nameFirst, ' ', nameLast) FROM people
         "fetchers": ["fetch_full_hof_name"],
         "sql_template": '''
 SELECT CONCAT(nameFirst, ' ', nameLast) FROM people
-WHERE birthState = (
+WHERE birthState IN (
     SELECT birthState FROM people
     WHERE nameFirst = '{nameFirst}' AND nameLast = '{nameLast}' AND birthState IS NOT NULL
 )
