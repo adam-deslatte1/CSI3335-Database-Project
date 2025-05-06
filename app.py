@@ -31,7 +31,9 @@ csrf = CSRFProtect(app)
 
 # Create tables and admin user at app startup
 with app.app_context():
+    # Create all tables
     db.create_all()
+    
     # Create admin user if not exists
     if not User.query.filter_by(username='admin').first():
         admin = User(
