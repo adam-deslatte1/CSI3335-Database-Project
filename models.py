@@ -50,25 +50,14 @@ class Division(db.Model):
 class NoHitter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.Date, nullable=False)
-    home_team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
-    away_team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=False)
-    home_score = db.Column(db.Integer, nullable=False)
-    away_score = db.Column(db.Integer, nullable=False)
+    pitchers = db.Column(db.String(255), nullable=False)  # Comma-separated names
+    team = db.Column(db.String(100), nullable=False)      # Team that threw the no-hitter
+    opponent = db.Column(db.String(100), nullable=False)  # Opponent team
+    score = db.Column(db.String(20), nullable=False)      # Score as string, e.g. '3-0'
     is_perfect_game = db.Column(db.Boolean, default=False)
-    innings = db.Column(db.Integer, default=9)
-    venue = db.Column(db.String(100))
-    attendance = db.Column(db.Integer)
-    pitchers = db.relationship('NoHitterPitcher', backref='no_hitter', lazy=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-class NoHitterPitcher(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    no_hitter_id = db.Column(db.Integer, db.ForeignKey('no_hitter.id'), nullable=False)
-    pitcher_id = db.Column(db.Integer, db.ForeignKey('player.id'), nullable=False)
-    innings_pitched = db.Column(db.Float)
-    strikeouts = db.Column(db.Integer)
-    walks = db.Column(db.Integer)
-    hit_batsmen = db.Column(db.Integer)
+    player_id = db.Column(db.Integer, db.ForeignKey('player.id'))  # Main pitcher (first listed)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id'))      # Team that threw the no-hitter
+    opponent_team_id = db.Column(db.Integer, db.ForeignKey('team.id'))  # Opponent team
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 class DivisionHistory(db.Model):
