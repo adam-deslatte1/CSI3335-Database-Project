@@ -66,6 +66,15 @@ python3 import_no_hitters.py
 
 
 
+**To run the project**
+```bash
+export FLASK_APP=app.py
+export PYTHONPATH=.
+flask run
+```
+
+
+
 **Admin Account Login Info:**
 ```bash
 user: admin
