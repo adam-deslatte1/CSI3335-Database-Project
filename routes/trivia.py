@@ -242,9 +242,17 @@ def play_trivia():
                 wrong_answers = run_sql(wrong_sql)
 
                 if not correct_answers:
-                    raise Exception('No correct answer found')
-                correct_answer = correct_answers[0]
-                options = [correct_answer] + wrong_answers[:3]
+                    flash('No correct answer found', 'error')
+                    return redirect(url_for('main.dashboard'))
+                correct_answer_full = correct_answers[0]
+                options_full = [correct_answer_full] + wrong_answers[:3]
+                # If the question template asks for a first name, extract only the first name from options
+                if 'first name' in question.template.lower() or 'shares a last name' in question.template.lower():
+                    options = [opt.split()[0] if ' ' in opt else opt for opt in options_full]
+                    correct_answer = correct_answer_full.split()[0] if ' ' in correct_answer_full else correct_answer_full
+                else:
+                    options = options_full
+                    correct_answer = correct_answer_full
                 random.shuffle(options)
 
                 # Store current question state in session for lifelines

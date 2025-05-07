@@ -124,16 +124,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (gpGameOver) {
             showOverlay(data.win, data.mystery);
         }
-    });
-    // Start new game
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    fetch('/guess-player/new', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken
+        // Only start a new game if there is no active game (no guesses and no mystery)
+        if ((!gpGuesses || gpGuesses.length === 0) && !data.mystery) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('/guess-player/new', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            }).then(r => r.json()).then(() => {
+                resetGame();
+            });
         }
-    }).then(r => r.json()).then(() => {
-        resetGame();
     });
 
     // Autocomplete
