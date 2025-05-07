@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, flash
 from flask_login import login_required, current_user
-from models import db, User, UserSelectionLog, NoHitter, NoHitterPitcher, Person, Team
+from ..models import db, User, UserSelectionLog, NoHitter, NoHitterPitcher, Person, Team
 from sqlalchemy import text
 
 main = Blueprint('main', __name__)
@@ -98,4 +98,59 @@ def team_nohitters():
         selected_team=selected_team,
         thrown_by=thrown_by,
         thrown_against=thrown_against
+    )
+
+@main.route('/team_divisions', methods=['GET'])
+def team_divisions():
+    # Get the selected year from the query parameters, default to current year if not specified
+    selected_year = request.args.get('year')
+    if selected_year:
+        selected_year = int(selected_year)
+    else:
+        selected_year = 2024
+    
+    # Get all available years from the database
+    years = db.session.query(Team.yearID).distinct().order_by(Team.yearID.desc()).all()
+    years = [y[0] for y in years]
+    
+    # Query teams and their divisions for the selected year
+    teams_by_division = {}
+    if selected_year:
+        # Get all teams for the selected year
+        teams = db.session.query(
+            Team.team_name,
+            Team.lgID,
+            Team.divID
+        ).filter(
+            Team.yearID == selected_year
+        ).order_by(
+            Team.lgID,
+            Team.divID,
+            Team.team_name
+        ).all()
+        
+        # Division mapping
+        division_names = {
+            'E': 'East',
+            'W': 'West',
+            'C': 'Central'
+        }
+        
+        # Organize teams by league and division
+        for team in teams:
+            league = team.lgID
+            division = division_names.get(team.divID, 'No Division') if team.divID else 'No Division'
+            
+            if league not in teams_by_division:
+                teams_by_division[league] = {}
+            if division not in teams_by_division[league]:
+                teams_by_division[league][division] = []
+            
+            teams_by_division[league][division].append(team.team_name)
+    
+    return render_template(
+        'team_divisions.html',
+        years=years,
+        selected_year=selected_year,
+        teams_by_division=teams_by_division
     )
