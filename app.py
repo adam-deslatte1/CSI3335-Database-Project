@@ -1,13 +1,13 @@
 from flask import Flask
-from .models import db, User
+from models import db, User
 from werkzeug.security import generate_password_hash
-from .csi3335s2025 import mysql
-from .routes.auth import auth
-from .routes.main import main
-from .routes.trivia import trivia
-from .routes.admin import admin
-from .routes.higher_lower import game as higher_lower_game
-from .routes.guess_player import guess_player
+from csi3335s2025 import mysql
+from routes.auth import auth
+from routes.main import main
+from routes.trivia import trivia
+from routes.admin import admin
+from routes.higher_lower import game as higher_lower_game
+from routes.guess_player import guess_player
 
 from flask_wtf import CSRFProtect
 from flask_login import LoginManager

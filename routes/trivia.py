@@ -1,10 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash
-from ..models import db, User, TriviaQuestion, UserTriviaHistory, UserLifeline
+from models import db, User, TriviaQuestion, UserTriviaHistory, UserLifeline
 from flask_login import login_required, current_user
 import json
 import random
 from sqlalchemy import text
-from ..fetch import FETCHER_MAP
+from fetch import FETCHER_MAP
 import re
 
 trivia = Blueprint('trivia', __name__)

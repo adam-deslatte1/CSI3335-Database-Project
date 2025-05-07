@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, flash
 from flask_login import login_required, current_user
-from ..models import db, Person, HigherLowerLeaderboard
-from sqlalchemy.sql import func
+from models import db, Person, HigherLowerLeaderboard
+from sqlalchemy import func, text
 import random
 
 game = Blueprint('higher_lower', __name__)
@@ -44,8 +44,6 @@ ALL_STATS = [
     # Awards
     ('awards', 'awardID', 'Total Awards Won', False, True),
 ]
-
-from sqlalchemy import text
 
 def get_random_player(exclude_player_id=None):
     # Query for a random player

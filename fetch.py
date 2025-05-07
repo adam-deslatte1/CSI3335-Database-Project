@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, jsonify, flash
-from .models import db
-from .csi3335s2025 import mysql
+from sqlalchemy import text
+from models import db
+from csi3335s2025 import mysql
 import random
-from sqlalchemy import text, create_engine
+from sqlalchemy import create_engine
 
 # === SQLAlchemy Setup ===
 engine = create_engine(f"mysql+pymysql://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}")

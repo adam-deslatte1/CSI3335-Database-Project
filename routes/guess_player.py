@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, session, jsonify
-from ..models import db
-from sqlalchemy import text
+from models import db, Person, GuessPlayerLeaderboard
+from sqlalchemy import text, func
+from flask_login import login_required, current_user
 import random
 
 guess_player = Blueprint('guess_player', __name__)

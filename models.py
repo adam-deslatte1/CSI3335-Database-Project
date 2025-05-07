@@ -127,3 +127,10 @@ class HigherLowerLeaderboard(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('app_users.id'))
     streak = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class GuessPlayerLeaderboard(db.Model):
+    __tablename__ = 'guess_player_leaderboard'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('app_users.id'))
+    score = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
