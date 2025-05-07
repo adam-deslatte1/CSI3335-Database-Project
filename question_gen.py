@@ -8,7 +8,7 @@ from csi3335s2025 import mysql
 fetch = importlib.import_module("fetch")
 
 # === SQLAlchemy setup ===
-engine = create_engine(f"mysql+mysqlconnector://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}")
+engine = create_engine(f"mysql+pymysql://{mysql['user']}:{mysql['password']}@{mysql['location']}/{mysql['database']}")
 
 
 def get_question_by_id(qid):

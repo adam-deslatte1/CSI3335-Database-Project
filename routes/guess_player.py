@@ -24,17 +24,21 @@ def search_players():
 
 # Helper: get a random player (with team, division, position, status, HOF)
 def get_random_player():
-    # Only select players with a team and position
     player = db.session.execute(text('''
-        SELECT p.playerID, p.nameFirst, p.nameLast, t.teamID, t.team_name, t.divID, f.position,
-               CASE WHEN p.finalGameDate IS NULL OR YEAR(p.finalGameDate) IN (2022, 2023) THEN 'Current' ELSE 'Retired' END AS status,
-               CASE WHEN h.inducted = 'Y' THEN 'Yes' ELSE 'No' END AS hof
+        SELECT p.playerID, p.nameFirst, p.nameLast, t.teamID, t.team_name, t.divID,
+            COALESCE(
+                (SELECT f2.position FROM fielding f2 WHERE f2.playerID = p.playerID AND f2.position IS NOT NULL LIMIT 1),
+                (SELECT 'Pitch' FROM pitching pi WHERE pi.playerID = p.playerID LIMIT 1),
+                (SELECT 'Bat' FROM batting b WHERE b.playerID = p.playerID LIMIT 1),
+                'Unknown'
+            ) AS position,
+            CASE WHEN p.finalGameDate IS NULL OR YEAR(p.finalGameDate) IN (2022, 2023) THEN 'Current' ELSE 'Retired' END AS status,
+            CASE WHEN h.inducted = 'Y' THEN 'Yes' ELSE 'No' END AS hof
         FROM people p
         JOIN appearances a ON p.playerID = a.playerID
         JOIN teams t ON a.teamID = t.teamID AND a.yearID = t.yearID
-        JOIN fielding f ON p.playerID = f.playerID
         LEFT JOIN halloffame h ON p.playerID = h.playerID
-        WHERE p.nameFirst IS NOT NULL AND p.nameLast IS NOT NULL AND f.position IS NOT NULL
+        WHERE p.nameFirst IS NOT NULL AND p.nameLast IS NOT NULL
         ORDER BY RAND() LIMIT 1
     ''')).first()
     if not player:
@@ -78,13 +82,18 @@ def guess_player_guess():
         return jsonify({'error': 'No active game.'}), 400
     # Find guessed player
     result = db.session.execute(text('''
-        SELECT p.playerID, p.nameFirst, p.nameLast, t.teamID, t.team_name, t.divID, f.position,
-               CASE WHEN p.finalGameDate IS NULL OR YEAR(p.finalGameDate) IN (2022, 2023) THEN 'Current' ELSE 'Retired' END AS status,
-               CASE WHEN h.inducted = 'Y' THEN 'Yes' ELSE 'No' END AS hof
+        SELECT p.playerID, p.nameFirst, p.nameLast, t.teamID, t.team_name, t.divID,
+            COALESCE(
+                (SELECT f2.position FROM fielding f2 WHERE f2.playerID = p.playerID AND f2.position IS NOT NULL LIMIT 1),
+                (SELECT 'Pitch' FROM pitching pi WHERE pi.playerID = p.playerID LIMIT 1),
+                (SELECT 'Bat' FROM batting b WHERE b.playerID = p.playerID LIMIT 1),
+                'Unknown'
+            ) AS position,
+            CASE WHEN p.finalGameDate IS NULL OR YEAR(p.finalGameDate) IN (2022, 2023) THEN 'Current' ELSE 'Retired' END AS status,
+            CASE WHEN h.inducted = 'Y' THEN 'Yes' ELSE 'No' END AS hof
         FROM people p
         JOIN appearances a ON p.playerID = a.playerID
         JOIN teams t ON a.teamID = t.teamID AND a.yearID = t.yearID
-        JOIN fielding f ON p.playerID = f.playerID
         LEFT JOIN halloffame h ON p.playerID = h.playerID
         WHERE CONCAT(p.nameFirst, ' ', p.nameLast) = :guess
         LIMIT 1

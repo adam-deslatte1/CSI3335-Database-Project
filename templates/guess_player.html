@@ -39,18 +39,23 @@
     </div>
 </div>
 <style>
+body {
+    background: #181c1b;
+    color: #fff;
+}
 .gp-search-box { position: relative; max-width: 400px; margin: 0 auto; }
-.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: #fff; border: 1px solid #ccc; border-top: none; max-height: 200px; overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.12); border-radius: 0 0 8px 8px; }
+.autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; z-index: 10; background: #222; border: 1px solid #444; border-top: none; max-height: 200px; overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.12); border-radius: 0 0 8px 8px; color: #fff; }
 .autocomplete-list div { padding: 0.5rem; cursor: pointer; transition: background 0.15s; }
-.autocomplete-list div:hover, .autocomplete-list .active { background: #e3f2fd; }
+.autocomplete-list div:hover, .autocomplete-list .active { background: #2d3a3a; }
 .gp-guess-table-wrapper { max-width: 900px; margin: 2rem auto 0 auto; }
 .gp-guess-table th, .gp-guess-table td { vertical-align: middle; font-size: 1.15rem; padding: 0.75rem 1.2rem; text-align: center; }
-.gp-guess-table th { font-weight: bold; font-size: 1.2rem; background: #f8f9fa; }
+.gp-guess-table th { font-weight: bold; font-size: 1.2rem; background: #232b2b; color: #fff; }
 .gp-guess-table tr { height: 3.2rem; }
+.gp-guess-table td { background: #232b2b; color: #fff; }
 .gp-guess-table td.gp-green { background: #2ecc40; color: #fff; font-weight: bold; }
-.gp-guess-table td.gp-gray { background: #e0e0e0; color: #888; }
+.gp-guess-table td.gp-gray { background: #444; color: #bbb; }
 .gp-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.gp-overlay-content { background: #fff; padding: 2rem 3rem; border-radius: 12px; text-align: center; }
+.gp-overlay-content { background: #232b2b; color: #fff; padding: 2rem 3rem; border-radius: 12px; text-align: center; }
 @media (max-width: 700px) {
     .gp-guess-table-wrapper { max-width: 100vw; }
     .gp-search-box { max-width: 98vw; }
@@ -119,16 +124,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (gpGameOver) {
             showOverlay(data.win, data.mystery);
         }
-    });
-    // Start new game
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    fetch('/guess-player/new', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken
+        // Only start a new game if there is no active game (no guesses and no mystery)
+        if ((!gpGuesses || gpGuesses.length === 0) && !data.mystery) {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('/guess-player/new', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            }).then(r => r.json()).then(() => {
+                resetGame();
+            });
         }
-    }).then(r => r.json()).then(() => {
-        resetGame();
     });
 
     // Autocomplete
