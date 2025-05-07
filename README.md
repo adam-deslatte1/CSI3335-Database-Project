@@ -14,6 +14,8 @@ For MacOS:
 python3 -m venv project_env
 ```
 
+
+
 **Activate venv**
 
 For Windows:
@@ -25,21 +27,29 @@ For MacOS:
 source project_env/bin/activate
 ```
 
+
+
 **Install the dependencies**
 ```bash
 pip install -r requirements.txt
 ```
+
+
 
 **Edit Database Credentials as Needed**
 ```bash
 edit csi3335s2025.py as needed
 ```
 
+
+
 **Import the New Table Changes**
 Create a new table to house the trivia questions called app_trivia_questions
 ```bash
 CREATE TABLE app_trivia_questions ( id INT AUTO_INCREMENT PRIMARY KEY, difficulty VARCHAR(20), template TEXT, fetchers TEXT, sql_template TEXT, wrong_sql_template TEXT);
 ```
+
+
 
 **Then import relevant tables**
 
@@ -53,6 +63,8 @@ For MacOS:
 python3 insert.py
 python3 import_no_hitters.py
 ```
+
+
 
 **Admin Account Login Info:**
 ```bash
