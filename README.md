@@ -4,6 +4,7 @@ Baseball-themed trivia game
 How to run:
 
 **Create virtual environment**
+
 For Windows:
 ```bash
 python -m venv project_env
@@ -14,6 +15,7 @@ python3 -m venv project_env
 ```
 
 **Activate venv**
+
 For Windows:
 ```bash
 .\project_env\Scripts\activate
@@ -40,6 +42,7 @@ CREATE TABLE app_trivia_questions ( id INT AUTO_INCREMENT PRIMARY KEY, difficult
 ```
 
 **Then import relevant tables**
+
 For Windows:
 ```bash
 python insert.py
