@@ -116,11 +116,19 @@ def team_divisions():
     # Query teams and their divisions for the selected year
     teams_by_division = {}
     if selected_year:
-        # Get all teams for the selected year
+        # Get all teams for the selected year with their division information
         teams = db.session.query(
             Team.team_name,
             Team.lgID,
-            Team.divID
+            Team.divID,
+            db.text('d.division_name')
+        ).outerjoin(
+            db.text('divisions d'),
+            db.and_(
+                Team.yearID == db.text('d.yearID'),
+                Team.lgID == db.text('d.lgID'),
+                Team.divID == db.text('d.divID')
+            )
         ).filter(
             Team.yearID == selected_year
         ).order_by(
@@ -129,17 +137,10 @@ def team_divisions():
             Team.team_name
         ).all()
         
-        # Division mapping
-        division_names = {
-            'E': 'East',
-            'W': 'West',
-            'C': 'Central'
-        }
-        
         # Organize teams by league and division
         for team in teams:
             league = team.lgID
-            division = division_names.get(team.divID, 'No Division') if team.divID else 'No Division'
+            division = team.division_name if team.division_name else 'No Division'
             
             if league not in teams_by_division:
                 teams_by_division[league] = {}

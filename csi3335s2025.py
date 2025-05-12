@@ -4,3 +4,10 @@ mysql = {
     'password': 'password',
     'database': 'baseball'
 }
+
+db_config = {
+    'host': mysql['location'],
+    'user': mysql['user'],
+    'password': mysql['password'],
+    'database': mysql['database']
+}

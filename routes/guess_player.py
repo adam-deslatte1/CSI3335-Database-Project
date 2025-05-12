@@ -26,7 +26,8 @@ def search_players():
 # Helper: get a random player (with team, division, position, status, HOF)
 def get_random_player():
     player = db.session.execute(text('''
-        SELECT p.playerID, p.nameFirst, p.nameLast, t.teamID, t.team_name, t.divID,
+        SELECT p.playerID, p.nameFirst, p.nameLast, t.teamID, t.team_name, 
+            COALESCE(d.division_name, 'No Division') as division,
             COALESCE(
                 (SELECT f2.position FROM fielding f2 WHERE f2.playerID = p.playerID AND f2.position IS NOT NULL LIMIT 1),
                 (SELECT 'Pitch' FROM pitching pi WHERE pi.playerID = p.playerID LIMIT 1),
@@ -38,6 +39,7 @@ def get_random_player():
         FROM people p
         JOIN appearances a ON p.playerID = a.playerID
         JOIN teams t ON a.teamID = t.teamID AND a.yearID = t.yearID
+        LEFT JOIN divisions d ON t.yearID = d.yearID AND t.lgID = d.lgID AND t.divID = d.divID
         LEFT JOIN halloffame h ON p.playerID = h.playerID
         WHERE p.nameFirst IS NOT NULL AND p.nameLast IS NOT NULL
         ORDER BY RAND() LIMIT 1

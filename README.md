@@ -57,11 +57,13 @@ For Windows:
 ```bash
 python insert.py
 python import_no_hitters.py
+python update_divisions.py
 ```
 For MacOS:
 ```bash
 python3 insert.py
 python3 import_no_hitters.py
+python3 update_divisions.py
 ```
 
 
