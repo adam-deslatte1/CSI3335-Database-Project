@@ -1,15 +1,19 @@
-import mysql.connector
+import pymysql
 import json
 from csi3335s2025 import mysql as mysql_config
 
 from questions import QUESTIONS
 
-conn = mysql.connector.connect(
+# Connect using PyMySQL
+conn = pymysql.connect(
     host=mysql_config['location'],
     user=mysql_config['user'],
     password=mysql_config['password'],
-    database=mysql_config['database']
+    database=mysql_config['database'],
+    charset='utf8mb4',  # Optional: supports full Unicode
+    cursorclass=pymysql.cursors.Cursor  # Default, but can be set explicitly
 )
+
 cur = conn.cursor()
 
 for q in QUESTIONS:
@@ -19,7 +23,7 @@ for q in QUESTIONS:
     """, (
         q["difficulty"],
         q["template"],
-        json.dumps(q["fetchers"]) if q["fetchers"] is not None else None,  # ← fixed here
+        json.dumps(q["fetchers"]) if q["fetchers"] is not None else None,
         q["sql_template"],
         q["wrong_sql_template"]
     ))
