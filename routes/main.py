@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, flash
 from flask_login import login_required, current_user
-from models import db, User, UserSelectionLog, NoHitter, NoHitterPitcher, Person, Team
+from models import db, User, UserSelectionLog, NoHitter, NoHitterPitcher, Person, Team, Division
 from sqlalchemy import text
 
 main = Blueprint('main', __name__)
@@ -121,13 +121,13 @@ def team_divisions():
             Team.team_name,
             Team.lgID,
             Team.divID,
-            db.text('d.division_name')
+            Division.division_name
         ).outerjoin(
-            db.text('divisions d'),
+            Division,
             db.and_(
-                Team.yearID == db.text('d.yearID'),
-                Team.lgID == db.text('d.lgID'),
-                Team.divID == db.text('d.divID')
+                Team.yearID == Division.yearID,
+                Team.lgID == Division.lgID,
+                Team.divID == Division.divID
             )
         ).filter(
             Team.yearID == selected_year

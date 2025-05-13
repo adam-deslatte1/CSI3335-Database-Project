@@ -121,6 +121,19 @@ class UserLifeline(db.Model):
 
 # Remove Team, Player, Division, and DivisionHistory models as we'll use Lahman tables instead
 
+class Division(db.Model):
+    __tablename__ = 'divisions'
+    __table_args__ = {
+        'extend_existing': True,
+        'mysql_charset': 'utf8mb3',
+        'mysql_collate': 'utf8mb3_general_ci'
+    }
+    id = db.Column(db.Integer, primary_key=True)
+    yearID = db.Column(db.SmallInteger, nullable=False)
+    lgID = db.Column(db.CHAR(2), nullable=False)
+    divID = db.Column(db.CHAR(1), nullable=False)
+    division_name = db.Column(db.String(50))
+
 class HigherLowerLeaderboard(db.Model):
     __tablename__ = 'higher_lower_leaderboard'
     id = db.Column(db.Integer, primary_key=True)
